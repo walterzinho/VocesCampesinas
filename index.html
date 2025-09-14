@@ -50,14 +50,14 @@
     <!-- Menú de navegación lateral (Drawer) -->
     <nav id="drawer" class="fixed inset-y-0 left-0 w-full md:w-80 bg-gray-800 p-6 flex flex-col space-y-6 shadow-2xl overflow-y-auto">
         <!-- Botón para cerrar el menú -->
-        <button id="close-drawer-button" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <button id="close-drawer-button" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors rounded-lg">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         <!-- Título del menú -->
         <div class="text-xl font-bold mb-4 text-white leading-tight">La Emisora<br>del Campo Colombiano</div>
 
         <!-- Botón para instalar la PWA, oculto por defecto -->
-        <button id="install-button" class="hidden w-full bg-blue-600 text-white p-3 font-bold hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center space-x-2">
+        <button id="install-button" class="hidden w-full bg-blue-600 text-white p-3 font-bold hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center space-x-2 rounded-lg">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>
             <span>Instalar Aplicación</span>
         </button>
@@ -65,23 +65,23 @@
         <!-- Botones de redes sociales -->
         <div class="flex flex-col space-y-3">
             <h3 class="text-md font-semibold text-gray-400">Síguenos</h3>
-            <a href="https://www.facebook.com/VocesCampesinas.co/" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors">
+            <a href="https://www.facebook.com/VocesCampesinas.co/" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors rounded-lg">
                 <svg fill="#3b5998" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.04c-5.52 0-10 4.48-10 10 0 5.068 3.687 9.278 8.441 9.932v-7.07h-2.522v-2.862h2.522v-2.19c0-2.483 1.493-3.84 3.729-3.84 1.054 0 2.054.188 2.054.188v2.259h-1.144c-1.22 0-1.603.755-1.603 1.528v1.86h2.812l-.45 2.862h-2.362v7.07c4.754-.654 8.441-4.864 8.441-9.932 0-5.52-4.48-10-10-10z"></path></svg>
                 <span>Facebook</span>
             </a>
-            <a href="https://www.instagram.com/VocesCampesinas.co/" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors">
+            <a href="https://www.instagram.com/VocesCampesinas.co/" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors rounded-lg">
                 <svg fill="#e1306c" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2c-2.71 0-3.056.012-4.123.06-1.065.05-1.79.214-2.428.465-.638.25-1.18.59-1.722 1.134-.543.543-.884 1.085-1.134 1.722-.25 1.067-.415 1.792-.465 2.428-.048 1.066-.06 1.41-.06 4.123s.012 3.056.06 4.123c.05 1.065.214 1.79.465 2.428.25.638.59 1.18 1.134 1.722.543.543 1.085.884 1.722 1.134 1.067.25 1.792.415 2.428.465 1.066.048 1.41.06 4.123.06s3.056-.012 4.123-.06c1.065-.05 1.79-.214 2.428-.465.638-.25 1.18-.59 1.722-1.134.543-.543.884-1.085 1.134-1.722.25-1.067.415-1.792.465-2.428.048-1.066.06-1.41.06-4.123s-.012-3.056-.06-4.123c-.05-1.065-.214-1.79-.465-2.428-.25-.638-.59-1.18-1.134-1.722-.543-.543-1.085-.884-1.722-1.134-1.067-.25-1.792-.415-2.428-.465C15.056 2.012 14.71 2 12 2zm0 1.5c2.66 0 2.97.01 4.04.058 1.04.048 1.54.195 1.83.313.3.125.56.29.81.54.25.25.415.51.54.81.125.29.265.79.313 1.83.048 1.07.058 1.38.058 4.04s-.01 2.97-.058 4.04c-.048 1.04-.195 1.54-.313 1.83-.125.3-.29.56-.54.81-.25.25-.51.415-.81.54-.29.125-.79.265-1.83.313-1.07.048-1.38.058-4.04.058s-2.97-.01-4.04-.058c-1.04-.048-1.54-.195-1.83-.313-.125-.3-.29-.56-.54-.81-.25-.25-.51-.415-.81-.54-.29-.125-.79-.265-1.83-.313C3.51 15.03 3.5 14.72 3.5 12s.01-2.97.058-4.04c.048-1.04.195-1.54.313-1.83.125-.3.29-.56.54-.81.25-.25.51-.415.81-.54.29-.125.79-.265 1.83-.313C9.03 3.51 9.34 3.5 12 3.5zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"></path><circle cx="16.5" cy="7.5" r="1.5"></circle></svg>
                 <span>Instagram</span>
             </a>
-            <a href="https://wa.me/573224626138" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors">
+            <a href="https://wa.me/573224626138" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors rounded-lg">
                 <svg fill="#25D366" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16.565 12.639c-.11-.063-.266-.113-.426-.142-.25-.045-.526-.046-.79-.046-.226 0-.585-.01-.98-.553-.38-.517-1.353-1.745-1.564-1.928-.21-.186-.44-.224-.653-.224-.22 0-.46.06-.67.31-.21.25-.802.94-1.012 1.146-.21.206-.435.234-.78.146-.35-.09-.76-.282-1.442-.693-.563-.33-1.054-.82-1.39-1.4-.34-.58-.035-.89.26-.97.23-.07.49-.24.69-.49.2-.25.29-.35.39-.58.11-.23.058-.45-.02-.63-.07-.18-.65-.72-1.01-.96-.35-.24-.76-.2-.93-.2-.176-.006-.385-.01-.58-.01-.2.01-.52.064-.79.314-.26.25-1.012 1-1.012 2.44s1.036 2.82 1.186 3.01c.15.196 2.07 3.178 5.02 4.417 2.476 1.038 2.977 1.09 3.53 1.09.553-.004 1.488-.13 1.7-.26.21-.13.565-.453.655-.67.09-.217.09-.395.06-.63zM12 2C6.477 2 2 6.477 2 12c0 2.222.766 4.316 2.15 5.96L3 21l3.239-1.02c1.512.87 3.23 1.36 5.011 1.36C17.523 21 22 16.523 22 11.999 22 6.477 17.523 2 12 2z"></path></svg>
                 <span>WhatsApp</span>
             </a>
-            <a href="https://www.tiktok.com/@vocescampesinas.co" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors">
+            <a href="https://www.tiktok.com/@vocescampesinas.co" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors rounded-lg">
                 <svg fill="#ffffff" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.3 2.067c-.703-1.503-2.36-.933-3.582-.759-1.291.173-2.274.91-2.716 2.189a1.077 1.077 0 0 1-.027-.375c-.172-.888-.862-1.5-.862-1.5-.883-.167-1.74.059-2.316.634a1.082 1.082 0 0 1-.322.343l-.004-.002a1.08 1.08 0 0 1-.343-.324C.893 2.26.177 3.486 0 5.165v2.964c.026 1.794.75 3.293 2.126 4.417 1.564 1.25 3.334 1.954 5.394 2.17.653.07 1.305.074 1.958 0 .804-.084 1.53-.33 2.18-.694.62-.35.986-.88 1.18-1.55a.864.864 0 0 1 .15-.224v-.004a.89.89 0 0 1 .224-.15c.67-.194 1.2-.56 1.55-1.18.364-.65.61-1.376.694-2.18.074-.654.07-1.305 0-1.958a1.503 1.503 0 0 0-.276-.71c-.247-.36-.54-.68-.88-.988a1.096 1.096 0 0 1-.22-.224l-.004-.004c-.07-.066-.14-.132-.22-.224l-.004-.004c-.066-.07-.132-.14-.224-.22z"></path></svg>
                 <span>TikTok</span>
             </a>
-            <a href="https://www.youtube.com/@VocesCampesinasCo" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors">
+            <a href="https://www.youtube.com/@VocesCampesinasCo" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors rounded-lg">
                 <svg fill="#FF0000" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.58 7.19a2.38 2.38 0 0 0-1.67-1.67C18.42 5 12 5 12 5s-6.42 0-7.91.52a2.38 2.38 0 0 0-1.67 1.67C2 8.7 2 12 2 12s0 3.3.52 4.81a2.38 2.38 0 0 0 1.67 1.67C5.58 19 12 19 12 19s6.42 0 7.91-.52a2.38 2.38 0 0 0 1.67-1.67C22 15.3 22 12 22 12s0-3.3-.52-4.81zM9.54 15.69V8.31L15.93 12l-6.39 3.69z"></path></svg>
                 <span>YouTube</span>
             </a>
@@ -92,22 +92,22 @@
             <h3 class="text-md font-semibold text-gray-400">Solicita una canción</h3>
             <form id="song-request-form" class="space-y-4">
                 <div>
-                    <input type="text" id="nombreCompleto" placeholder="Nombre completo" required class="w-full p-3 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <input type="text" id="nombreCompleto" placeholder="Nombre completo" required class="w-full p-3 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none rounded-lg">
                 </div>
                 <div>
-                    <input type="text" id="nombreCancion" placeholder="Nombre de la canción" required class="w-full p-3 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <input type="text" id="nombreCancion" placeholder="Nombre de la canción" required class="w-full p-3 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none rounded-lg">
                 </div>
                 <div>
-                    <input type="text" id="nombreAutor" placeholder="Nombre del autor" required class="w-full p-3 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <input type="text" id="nombreAutor" placeholder="Nombre del autor" required class="w-full p-3 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none rounded-lg">
                 </div>
-                <button type="submit" class="w-full bg-green-600 text-white p-3 font-bold hover:bg-green-700 transition-colors shadow-lg">
+                <button type="submit" class="w-full bg-green-600 text-white p-3 font-bold hover:bg-green-700 transition-colors shadow-lg rounded-lg">
                     Enviar a WhatsApp
                 </button>
             </form>
         </div>
         
         <!-- Enlace de la emisora -->
-        <a href="https://www.vocescampesinas.co" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors mt-6">
+        <a href="https://www.vocescampesinas.co" target="_blank" class="flex items-center space-x-3 text-sm p-2 hover:bg-gray-700 transition-colors mt-6 rounded-lg">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-3.3 0-6 2.7-6 6v7c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4v-7c0-3.3-2.7-6-6-6zm0 2c2.2 0 4 1.8 4 4v7c0 1.1-.9 2-2 2h-4c-1.1 0-2-.9-2-2v-7c0-2.2 1.8-4 4-4zM8 12h8v2H8z"></path></svg>
             <span>Visita nuestra página web</span>
         </a>
@@ -118,7 +118,7 @@
 
         <!-- Barra Superior -->
         <header class="bg-gray-800 p-4 flex items-center justify-between shadow-lg">
-            <button id="menu-button" class="p-2 hover:bg-gray-700 transition-colors">
+            <button id="menu-button" class="p-2 hover:bg-gray-700 transition-colors rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg>
             </button>
             <h1 class="text-lg font-bold text-center flex-grow text-neon-blue glow">Emisora Digital Voces Campesinas</h1>
@@ -129,7 +129,7 @@
         <main class="flex-grow flex flex-col items-center p-6 text-center space-y-4 overflow-y-auto">
             <!-- Contenedor del logo con un tamaño más pequeño -->
             <div class="max-w-40 w-full">
-                <img src="https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383" alt="Logo de Voces Campesinas" class="w-full h-auto shadow-xl">
+                <img src="https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383" alt="Logo de Voces Campesinas" class="w-full h-auto shadow-xl rounded-lg">
             </div>
             <h2 class="text-4xl font-extrabold text-white">Voces Campesinas</h2>
             <p class="text-lg font-light text-gray-400">www.vocescampesinas.co</p>
@@ -144,11 +144,17 @@
             <!-- Controles de audio personalizados -->
             <div class="flex flex-col items-center space-y-4 mt-2 w-full max-w-sm">
                 <div class="flex space-x-4">
-                    <button id="play-button" class="bg-blue-600 text-white p-4 shadow-lg hover:bg-blue-700 transition-colors">
+                    <button id="play-button" class="bg-blue-600 text-white p-3 shadow-lg hover:bg-blue-700 transition-colors rounded-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
                     </button>
-                    <button id="stop-button" class="bg-red-600 text-white p-4 shadow-lg hover:bg-red-700 transition-colors">
+                    <button id="stop-button" class="bg-red-600 text-white p-3 shadow-lg hover:bg-red-700 transition-colors rounded-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"></path></svg>
+                    </button>
+                    <!-- Botón para alternar pantalla completa -->
+                    <button id="fullscreen-button" class="bg-gray-600 text-white p-3 shadow-lg hover:bg-gray-700 transition-colors rounded-lg">
+                        <svg id="fullscreen-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                        </svg>
                     </button>
                 </div>
                 <div class="flex items-center space-x-2 w-full">
@@ -187,6 +193,9 @@
         const volumeControl = document.getElementById('volume-control');
         const installButton = document.getElementById('install-button');
         const closeDrawerButton = document.getElementById('close-drawer-button');
+        // Nuevo botón y ícono para pantalla completa
+        const fullscreenButton = document.getElementById('fullscreen-button');
+        const fullscreenIcon = document.getElementById('fullscreen-icon');
 
         let deferredPrompt;
 
@@ -257,6 +266,28 @@
         volumeControl.addEventListener('input', (e) => {
             audioPlayer.volume = e.target.value / 100;
         });
+
+        // Lógica para alternar el modo de pantalla completa
+        fullscreenButton.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error('Error al intentar activar la pantalla completa:', err);
+                });
+            }
+        });
+
+        // Actualizar el ícono del botón de pantalla completa
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                // Modo de pantalla completa activo, mostrar ícono para salir
+                fullscreenIcon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V7h-3V5h5v5h-2z"/>';
+            } else {
+                // Modo de pantalla completa inactivo, mostrar ícono para entrar
+                fullscreenIcon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
+            }
+        });
         
         // Lógica del formulario de solicitud de canción
         songRequestForm.addEventListener('submit', (e) => {
@@ -285,3 +316,4 @@
     </script>
 </body>
 </html>
+
