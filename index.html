@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emisora Digital Voces Campesinas</title>
+    <!-- Favicon de la aplicación -->
+    <link rel="icon" type="image/png" href="https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -39,7 +41,6 @@
         .glow {
             filter: drop-shadow(0 0 5px #00BFFF);
         }
-        
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 antialiased h-screen flex flex-col">
@@ -49,10 +50,10 @@
     <!-- Menú de navegación lateral (Drawer) -->
     <nav id="drawer" class="fixed inset-y-0 left-0 w-full md:w-80 bg-gray-800 p-6 flex flex-col space-y-6 shadow-2xl overflow-y-auto">
         <!-- Título del menú -->
-        <div class="text-xl font-bold mb-4 text-white">La Emisora del Campo Colombiano</div>
+        <div class="text-xl font-bold mb-4 text-white leading-tight">La Emisora<br>del Campo Colombiano</div>
 
-        <!-- Botón para instalar la PWA -->
-        <button id="install-button" class="w-full bg-blue-600 text-white p-3 font-bold hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center space-x-2">
+        <!-- Botón para instalar la PWA, oculto por defecto -->
+        <button id="install-button" class="hidden w-full bg-blue-600 text-white p-3 font-bold hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>
             <span>Instalar Aplicación</span>
         </button>
@@ -123,7 +124,7 @@
         <!-- Cuerpo -->
         <main class="flex-grow flex flex-col items-center p-6 text-center space-y-4 overflow-y-auto">
             <!-- Contenedor del logo con un tamaño más pequeño -->
-            <div class="max-w-xs w-full">
+            <div class="max-w-40 w-full">
                 <img src="https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383" alt="Logo de Voces Campesinas" class="w-full h-auto shadow-xl">
             </div>
             <h2 class="text-4xl font-extrabold text-white">Voces Campesinas</h2>
@@ -186,28 +187,37 @@
 
         // Mostrar el botón de instalación si la PWA es instalable
         window.addEventListener('beforeinstallprompt', (e) => {
+            // Previene que el navegador muestre su propio mensaje de instalación
             e.preventDefault();
+            // Guarda el evento para que se pueda disparar más tarde
             deferredPrompt = e;
-            installButton.style.display = 'flex'; // Usar flex para mantener el diseño
+            // Muestra el botón de instalación
+            installButton.classList.remove('hidden');
+            installButton.classList.add('flex');
         });
 
         // Ocultar el botón si la aplicación ya está instalada
-        window.addEventListener('appinstalled', (e) => {
-            installButton.style.display = 'none';
+        window.addEventListener('appinstalled', () => {
+            installButton.classList.remove('flex');
+            installButton.classList.add('hidden');
         });
 
-        installButton.addEventListener('click', (e) => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('El usuario aceptó instalar la PWA');
-                    } else {
-                        console.log('El usuario canceló la instalación de la PWA');
-                    }
-                    deferredPrompt = null;
-                });
-            }
+        // Manejar el clic en el botón de instalación
+        installButton.addEventListener('click', () => {
+            // Oculta el botón inmediatamente
+            installButton.classList.remove('flex');
+            installButton.classList.add('hidden');
+            // Dispara el evento guardado
+            deferredPrompt.prompt();
+            // Espera a que el usuario decida y reinicia la variable
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('El usuario aceptó instalar la PWA');
+                } else {
+                    console.log('El usuario canceló la instalación de la PWA');
+                }
+                deferredPrompt = null;
+            });
         });
 
         // Lógica para abrir y cerrar el menú lateral
