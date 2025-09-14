@@ -1,21 +1,21 @@
 {
-"name": "Emisora Digital Voces Campesinas",
-"short_name": "Voces Campesinas",
-"description": "El Campo Nos Une",
-"start_url": "./",
-"display": "standalone",
-"background_color": "#121212",
-"theme_color": "#00BFFF",
-"icons": [
-{
-"src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
-"sizes": "192x192",
-"type": "image/png"
-},
-{
-"src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
-"sizes": "512x512",
-"type": "image/png"
-}
-]
+  "name": "Emisora Digital Voces Campesinas",
+  "short_name": "Voces Campesinas",
+  "description": "El Campo Nos Une",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#121212",
+  "theme_color": "#00BFFF",
+  "icons": [
+    {
+      "src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
