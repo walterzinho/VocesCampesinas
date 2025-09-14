@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emisora Digital Voces Campesinas</title>
     <!-- Favicon de la aplicación -->
-    <link rel="icon" type="image/png" href="https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383">
+    <link rel="icon" type="image/png" href="https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-stxmzYDYOsnRIOqo9_GE7g=w16383">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -49,6 +49,10 @@
 
     <!-- Menú de navegación lateral (Drawer) -->
     <nav id="drawer" class="fixed inset-y-0 left-0 w-full md:w-80 bg-gray-800 p-6 flex flex-col space-y-6 shadow-2xl overflow-y-auto">
+        <!-- Botón para cerrar el menú -->
+        <button id="close-drawer-button" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
         <!-- Título del menú -->
         <div class="text-xl font-bold mb-4 text-white leading-tight">La Emisora<br>del Campo Colombiano</div>
 
@@ -182,6 +186,7 @@
         const stopButton = document.getElementById('stop-button');
         const volumeControl = document.getElementById('volume-control');
         const installButton = document.getElementById('install-button');
+        const closeDrawerButton = document.getElementById('close-drawer-button');
 
         let deferredPrompt;
 
@@ -230,6 +235,13 @@
             drawer.classList.remove('open');
             overlay.classList.remove('show');
         });
+
+        // Nuevo botón para cerrar el menú lateral
+        closeDrawerButton.addEventListener('click', () => {
+            drawer.classList.remove('open');
+            overlay.classList.remove('show');
+        });
+
 
         // Lógica de los controles de audio
         playButton.addEventListener('click', () => {
