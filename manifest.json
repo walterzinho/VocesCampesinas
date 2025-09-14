@@ -1,19 +1,19 @@
 {
 "name": "Emisora Digital Voces Campesinas",
 "short_name": "Voces Campesinas",
-"description": "Emisora Digital Voces Campesinas - El Campo Nos Une!",
-"start_url": "index.html",
+"description": "El Campo Nos Une",
+"start_url": "./",
 "display": "standalone",
 "background_color": "#121212",
 "theme_color": "#00BFFF",
 "icons": [
 {
-"src": "https://www.google.com/search?q=https://placehold.co/192x192/121212/00BFFF%3Ftext%3DVC",
+"src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
 "sizes": "192x192",
 "type": "image/png"
 },
 {
-"src": "https://www.google.com/search?q=https://placehold.co/512x512/121212/00BFFF%3Ftext%3DVC",
+"src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
 "sizes": "512x512",
 "type": "image/png"
 }
