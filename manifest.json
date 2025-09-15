@@ -1,21 +1,21 @@
 {
-  "name": "Emisora Digital Voces Campesinas",
-  "short_name": "Voces Campesinas",
-  "description": "El Campo Nos Une",
-  "start_url": "./",
-  "display": "fullscreen",
-  "background_color": "#121212",
-  "theme_color": "#00BFFF",
-  "icons": [
-    {
-      "src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://lh4.googleusercontent.com/s69G3CcYHWtyjVgTWD-B7w4TAcJUgP-NHHj171-eIyraQKZUBXvBBAQLdmxJMT24PJbY2I8SsHbimejp-9mYqVM-iPjWx4RxVrvwWzFK9cZGFAlTq_-tmxsxmzYDYOsnRIOqo9_GE7g=w16383",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+"name": "Emisora Voces Campesinas",
+"short_name": "www.VocesCampesinas.co",
+"description": "Emisora Digital Voces Campesinas.",
+"start_url": "/index.html",
+"display": "standalone",
+"background_color": "#FFFBFE",
+"theme_color": "#6750A4",
+"icons": [
+{
+"src": "https://walterzinho.github.io/VocesCampesinas/android-chrome-192x192.png",
+"sizes": "192x192",
+"type": "image/png"
+},
+{
+"src": "https://walterzinho.github.io/VocesCampesinas/android-chrome-310x310.png",
+"sizes": "310x310",
+"type": "image/png"
+}
+]
 }
