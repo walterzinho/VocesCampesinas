@@ -1,52 +1,40 @@
 ---
-Task ID: 1
+Task ID: 2
 Agent: Main Agent
-Task: Implement all user-requested improvements to Voces Campesinas PWA radio app
+Task: Implement 5 UI/UX improvements requested by user
 
 Work Log:
-- Updated Prisma schema with SongRequest model (id, listenerName, message, type, isRead, createdAt)
-- Ran prisma db push to sync database
-- Created /api/requests/route.ts - POST (public submit), GET/PUT/DELETE (admin only)
-- Created /api/blog/route.ts - Proxies WordPress REST API from http://161.97.154.157:8099/, strips HTML, returns articles with images
-- Rewrote admin-panel.tsx with all improvements:
-  - Added onBack prop for navigation back to player without page reload
-  - Added back arrow button in header and login screen
-  - Removed password hint text ("voces2024" default text removed)
-  - Added quick day selection buttons: "Todos", "Lun - Vie", "Fin de Semana"
-  - Individual day grid with 7 columns (Dom-Sáb) with checkmark indicators
-  - Added 4th tab "Peticiones" for managing song requests from listeners
-  - Renamed "Mensajes" tab to "Información"
-  - Added unread request badge counter
-  - Added mark-as-read/delete for requests
-  - Password field in settings no longer shows current password
-- Created song-request-form.tsx - Listener-facing form with:
-  - 3 request types: Petición Musical, Saludo, Mensaje
-  - Optional name field, message textarea
-  - Submit confirmation animation
-- Created blog-section.tsx - Fetches and displays blog articles with:
-  - Featured images, titles, excerpts, dates
-  - Loading skeleton, error handling
-  - "Ver todas" link to full blog
-- Rewrote message-banner.tsx:
-  - Renamed section to "Información"
-  - Enhanced with decorative gradient accent bars, type labels (INFO/ALERTA/PROMO)
-  - Priority badges, navigation arrows
-  - Clickable dot indicators
-- Rewrote schedule-view.tsx:
-  - Animated "Música de la Tierrita" empty state with music note particles
-  - Shows contextual message based on whether it's today or another day
-  - Adds "Ahora: Música de la Tierrita" note when today has programs but none is currently live
-- Rewrote page.tsx:
-  - Dynamic ambient background gradients based on time of day and current program
-  - Animated floating light orbs
-  - "Música de la Tierrita" display when no current program is live
-  - Added SongRequestForm component
-  - Added BlogSection component
-  - AdminPanel now receives onBack callback
-- Build verified: zero errors, all routes working
-- API endpoints tested: /api/settings, /api/programs, /api/requests (201), /api/blog (200 with 6 articles)
+- Copied LogoVC.png to /public/logo.png for use as station logo
+- Created /public/uploads/ directory for program background images
+- Generated placeholder musicatierrita.png (default background when no program is on air)
+- Created /api/upload/route.ts - File upload endpoint (admin only) for program images
+- Updated /api/blog/route.ts - Now reads blogUrl from Settings table instead of hardcoded URL
+- Updated prisma/seed.ts - Added blogUrl setting
+- Ran prisma db seed to sync new setting
+- Completely rewrote page.tsx with restructured layout:
+  - Shared compact header with real logo (all non-admin views)
+  - 4-tab bottom navigation: En Vivo, Noticias, Programación, Admin
+  - En Vivo tab: "Ahora Suena" hero card with dynamic background image → "A continuación" next program card → Radio Player → Información → Song Requests → Social links
+  - Noticias tab: Full blog articles view
+  - Programación tab: Full schedule view
+  - Background image changes based on current program (imageUrl) or defaults to musicatierrita.png
+  - AnimatePresence for smooth tab transitions
+- Updated admin-panel.tsx:
+  - Added Program.imageUrl field to interface
+  - Added AppSettings.blogUrl field
+  - Added image upload handler with preview in program dialog
+  - Added "Imagen de fondo" field with file picker, upload progress, preview, and remove button
+  - Added "URL del Blog" field in settings section
+  - Added ImageIcon import
+- Updated blog-section.tsx:
+  - Now receives blogUrl from API response
+  - "Ver todas" link uses dynamic blogUrl
+  - Improved article card layout with larger images
+  - Better loading skeleton
 
 Stage Summary:
-- All 7 requested features implemented successfully
-- Build clean with zero errors
-- App running on localhost:3000
+- All 5 improvements implemented
+- Build clean with zero errors (13 routes)
+- Logo, musicatierrita.png, and upload system working
+- Blog URL now configurable from admin panel
+- Background image changes dynamically based on current program

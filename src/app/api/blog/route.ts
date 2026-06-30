@@ -1,11 +1,14 @@
+import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-
-const BLOG_URL = 'http://161.97.154.157:8099';
 
 export async function GET() {
   try {
+    // Read blog URL from settings (configurable by admin)
+    const blogSetting = await db.settings.findUnique({ where: { key: 'blogUrl' } });
+    const blogUrl = blogSetting?.value || 'http://161.97.154.157:8099';
+
     // Fetch blog posts from WordPress REST API
-    const res = await fetch(`${BLOG_URL}/wp-json/wp/v2/posts?per_page=6&_embed`, {
+    const res = await fetch(`${blogUrl}/wp-json/wp/v2/posts?per_page=6&_embed`, {
       next: { revalidate: 300 }, // Cache for 5 minutes
       signal: AbortSignal.timeout(8000),
     });
@@ -33,6 +36,7 @@ export async function GET() {
         link: post.link,
         imageUrl,
         date: post.date,
+        blogUrl, // Include so frontend can construct "Ver todas" link
       };
     });
 

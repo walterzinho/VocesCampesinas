@@ -13,6 +13,7 @@ async function seed() {
     { key: 'whatsappUrl', value: 'https://wa.me/573000000000' },
     { key: 'primaryColor', value: '#F4D03F' },
     { key: 'darkColor', value: '#17202A' },
+    { key: 'blogUrl', value: 'http://161.97.154.157:8099' },
   ];
 
   for (const s of defaultSettings) {

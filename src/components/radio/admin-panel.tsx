@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff } from 'lucide-react';
+import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +25,7 @@ interface Program {
   isActive: boolean;
   genre: string | null;
   sortOrder: number;
+  imageUrl: string | null;
 }
 
 interface Message {
@@ -53,6 +54,7 @@ interface AppSettings {
   whatsappUrl: string;
   primaryColor: string;
   darkColor: string;
+  blogUrl: string;
 }
 
 interface Log {
@@ -164,6 +166,34 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     return days.every(d => selectedDays.includes(d));
   };
 
+  // Image upload handler
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('field', 'program');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: authHeader().headers,
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEditingProgram(prev => ({ ...prev, imageUrl: data.url }));
+        toast.success('Imagen subida');
+      } else {
+        toast.error('Error al subir imagen');
+      }
+    } catch {
+      toast.error('Error al subir imagen');
+    }
+    setUploadingImage(false);
+  };
+
   // Program CRUD
   const saveProgram = async () => {
     if (!editingProgram.name || !editingProgram.startTime || !editingProgram.endTime) {
@@ -184,6 +214,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       genre: editingProgram.genre || '',
       isActive: editingProgram.isActive ?? true,
       sortOrder: editingProgram.sortOrder ?? 0,
+      imageUrl: editingProgram.imageUrl || '',
     };
 
     try {
@@ -628,6 +659,40 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                         className="bg-white/5 border-white/10 text-white text-xs"
                       />
                     </div>
+                    {/* Image Upload */}
+                    <div>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo</label>
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                          <span className="text-xs text-white/50 truncate">
+                            {editingProgram.imageUrl || 'Seleccionar imagen...'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {uploadingImage && (
+                          <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+                        )}
+                        {editingProgram.imageUrl && (
+                          <button
+                            onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))}
+                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+                            title="Quitar imagen"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      {editingProgram.imageUrl && (
+                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
+                          <img src={editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10px] text-white/40 mb-1 block">Hora inicio *</label>
@@ -948,6 +1013,16 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     value={settings.streamUrl}
                     onChange={e => setSettings(prev => ({ ...prev, streamUrl: e.target.value }))}
                     onBlur={() => saveSetting('streamUrl', settings.streamUrl)}
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">URL del Blog</label>
+                  <Input
+                    value={settings.blogUrl || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, blogUrl: e.target.value }))}
+                    onBlur={() => saveSetting('blogUrl', settings.blogUrl || '')}
+                    placeholder="http://161.97.154.157:8099"
                     className="bg-white/5 border-white/10 text-white text-xs"
                   />
                 </div>
