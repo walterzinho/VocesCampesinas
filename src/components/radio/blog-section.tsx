@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Newspaper, ExternalLink, Calendar } from 'lucide-react';
+import { Newspaper, ExternalLink, Calendar, ImageOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Article {
@@ -51,13 +51,14 @@ export default function BlogSection() {
     return (
       <div className="space-y-3">
         {[1, 2, 3].map(i => (
-          <div key={i} className="animate-pulse rounded-2xl bg-white/5 p-4">
-            <div className="flex gap-3">
-              <div className="w-16 h-16 rounded-xl bg-white/10 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 bg-white/10 rounded w-3/4" />
-                <div className="h-2 bg-white/5 rounded w-full" />
-                <div className="h-2 bg-white/5 rounded w-1/2" />
+          <div key={i} className="animate-pulse rounded-2xl bg-white/5 overflow-hidden">
+            <div className="flex">
+              <div className="w-28 h-28 bg-white/10 shrink-0" />
+              <div className="flex-1 p-3 space-y-2">
+                <div className="h-4 bg-white/10 rounded w-3/4" />
+                <div className="h-3 bg-white/5 rounded w-full" />
+                <div className="h-3 bg-white/5 rounded w-2/3" />
+                <div className="h-3 bg-white/5 rounded w-1/3 mt-3" />
               </div>
             </div>
           </div>
@@ -71,7 +72,7 @@ export default function BlogSection() {
   return (
     <div className="space-y-3">
       {/* Section header */}
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center justify-between px-1 mb-1">
         <div className="flex items-center gap-2">
           <Newspaper className="w-4 h-4 text-[#F4D03F]" />
           <h3 className="text-sm font-bold text-white">Noticias Destacadas</h3>
@@ -88,39 +89,71 @@ export default function BlogSection() {
         )}
       </div>
 
-      {/* Articles */}
+      {/* Articles - large visual cards with 1:1 image left */}
       {articles.map((article, idx) => (
         <motion.a
           key={article.id}
           href={article.link}
           target="_blank"
           rel="noopener noreferrer"
-          initial={{ opacity: 0, y: 5 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: idx * 0.05 }}
-          className="block rounded-2xl bg-white/5 border border-white/10 overflow-hidden hover:bg-white/[0.03] transition-colors"
+          transition={{ delay: idx * 0.06 }}
+          className="block rounded-2xl bg-white/5 border border-white/[0.08] overflow-hidden hover:bg-white/[0.07] hover:border-white/[0.15] transition-all duration-200 active:scale-[0.98]"
         >
-          <div className="flex gap-3 p-3">
-            {article.imageUrl && (
-              <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-white/5">
+          <div className="flex">
+            {/* Image - 1:1 square, prominent */}
+            <div className="shrink-0 w-28 h-28 relative bg-white/[0.03]">
+              {article.imageUrl ? (
                 <img
                   src={article.imageUrl}
                   alt=""
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  onError={(e) => {
+                    // Hide image on error, show fallback
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'w-full h-full flex items-center justify-center bg-gradient-to-br from-[#F4D03F]/10 to-[#F4D03F]/5';
+                      fallback.innerHTML = '<svg class="w-6 h-6 text-[#F4D03F]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"/></svg>';
+                      parent.appendChild(fallback);
+                    }
+                  }}
                 />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-semibold text-white line-clamp-2 leading-tight">{article.title}</h4>
-              {article.excerpt && (
-                <p className="text-[10px] text-white/35 mt-1 line-clamp-2 leading-relaxed">{article.excerpt}</p>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#F4D03F]/10 to-[#F4D03F]/5">
+                  <ImageOff className="w-5 h-5 text-[#F4D03F]/30" />
+                </div>
               )}
-              <div className="flex items-center gap-1 mt-1.5">
-                <Calendar className="w-2.5 h-2.5 text-white/20" />
-                <span className="text-[9px] text-white/20">
-                  {new Date(article.date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {/* Category accent line */}
+              <div className="absolute top-0 left-0 w-1 h-full bg-[#F4D03F]/60 rounded-r" />
+            </div>
+
+            {/* Text content */}
+            <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
+              <div>
+                <h4 className="text-[13px] font-bold text-white line-clamp-2 leading-snug">
+                  {article.title}
+                </h4>
+                {article.excerpt && (
+                  <p className="text-[11px] text-white/35 mt-1.5 line-clamp-2 leading-relaxed">
+                    {article.excerpt}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-2">
+                <Calendar className="w-3 h-3 text-white/20" />
+                <span className="text-[10px] text-white/25">
+                  {new Date(article.date).toLocaleDateString('es-CO', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
                 </span>
+                <ExternalLink className="w-3 h-3 text-white/15 ml-auto" />
               </div>
             </div>
           </div>

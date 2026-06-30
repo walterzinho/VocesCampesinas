@@ -22,11 +22,16 @@ export async function GET() {
     // Transform to a simplified format
     const articles = posts.map((post: any) => {
       const featuredMedia = post._embedded?.['wp:featuredmedia']?.[0];
-      const imageUrl = featuredMedia?.source_url || null;
+      const rawImageUrl = featuredMedia?.source_url || null;
+
+      // Proxy image through our server to avoid CORS/mixed-content issues
+      const imageUrl = rawImageUrl
+        ? `/api/blog/image?url=${encodeURIComponent(rawImageUrl)}`
+        : null;
 
       // Strip HTML tags from excerpt
       const excerpt = post.excerpt?.rendered
-        ? post.excerpt.rendered.replace(/<[^>]*>/g, '').trim().substring(0, 150)
+        ? post.excerpt.rendered.replace(/<[^>]*>/g, '').trim().substring(0, 200)
         : '';
 
       return {
@@ -36,7 +41,7 @@ export async function GET() {
         link: post.link,
         imageUrl,
         date: post.date,
-        blogUrl, // Include so frontend can construct "Ver todas" link
+        blogUrl,
       };
     });
 
