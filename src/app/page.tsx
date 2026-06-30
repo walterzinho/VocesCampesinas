@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import RadioPlayer from '@/components/radio/radio-player';
 import ScheduleView from '@/components/radio/schedule-view';
 import MessageBanner from '@/components/radio/message-banner';
+import SongRequestForm from '@/components/radio/song-request-form';
+import BlogSection from '@/components/radio/blog-section';
 import AdminPanel from '@/components/radio/admin-panel';
-import { Radio, CalendarDays, Shield, Share2, Download, WifiOff } from 'lucide-react';
+import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Send, Newspaper } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface StationSettings {
@@ -30,6 +32,13 @@ interface Program {
 
 type View = 'player' | 'schedule' | 'admin';
 
+// Background images for different vibes
+const BACKGROUND_IMAGES = [
+  '/bg-radio-1.jpg',
+  '/bg-radio-2.jpg',
+  '/bg-radio-3.jpg',
+];
+
 export default function HomePage() {
   const [settings, setSettings] = useState<StationSettings>({
     streamUrl: 'https://emisora.vocescampesinas.co/listen/vocescampesinas/radio.mp3',
@@ -39,6 +48,7 @@ export default function HomePage() {
     primaryColor: '#F4D03F', darkColor: '#17202A',
   });
   const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
+  const [allPrograms, setAllPrograms] = useState<Program[]>([]);
   const [view, setView] = useState<View>('player');
   const [isOnline, setIsOnline] = useState(true);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
@@ -51,6 +61,7 @@ export default function HomePage() {
         const res = await fetch('/api/programs');
         if (res.ok && !cancelled) {
           const programs: Program[] = await res.json();
+          setAllPrograms(programs);
           const now = new Date();
           const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
           const today = now.getDay();
@@ -126,13 +137,84 @@ export default function HomePage() {
     }
   };
 
-  // Admin view
+  // Determine background gradient based on time and program
+  const bgStyle = useMemo(() => {
+    const hour = new Date().getHours();
+    // Morning: warm golden tones, Afternoon: bright amber, Night: deep blue-gold
+    if (currentProgram) {
+      return {
+        background: `
+          radial-gradient(ellipse at 50% 0%, rgba(244,208,63,0.12) 0%, transparent 60%),
+          radial-gradient(ellipse at 20% 80%, rgba(212,172,13,0.08) 0%, transparent 50%),
+          radial-gradient(ellipse at 80% 50%, rgba(244,208,63,0.05) 0%, transparent 40%),
+          #17202A
+        `,
+      };
+    }
+    if (hour >= 5 && hour < 12) {
+      // Morning
+      return {
+        background: `
+          radial-gradient(ellipse at 50% 0%, rgba(244,208,63,0.1) 0%, transparent 60%),
+          radial-gradient(ellipse at 30% 100%, rgba(255,200,50,0.06) 0%, transparent 50%),
+          #17202A
+        `,
+      };
+    } else if (hour >= 12 && hour < 18) {
+      // Afternoon
+      return {
+        background: `
+          radial-gradient(ellipse at 70% 20%, rgba(244,208,63,0.08) 0%, transparent 60%),
+          radial-gradient(ellipse at 20% 80%, rgba(212,172,13,0.05) 0%, transparent 50%),
+          #17202A
+        `,
+      };
+    } else {
+      // Night
+      return {
+        background: `
+          radial-gradient(ellipse at 50% 0%, rgba(100,130,180,0.06) 0%, transparent 60%),
+          radial-gradient(ellipse at 50% 100%, rgba(244,208,63,0.04) 0%, transparent 50%),
+          #17202A
+        `,
+      };
+    }
+  }, [currentProgram]);
+
+  // Admin view with back button
   if (view === 'admin') {
-    return <AdminPanel />;
+    return <AdminPanel onBack={() => setView('player')} />;
   }
 
   return (
-    <div className="relative w-full h-dvh bg-[#17202A] overflow-hidden flex flex-col" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+    <div className="relative w-full h-dvh overflow-hidden flex flex-col" style={bgStyle}>
+      {/* Animated ambient overlay */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-20 -left-20 w-60 h-60 rounded-full bg-[#F4D03F]/5 blur-3xl"
+        />
+        <motion.div
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-[#D4AC0D]/5 blur-3xl"
+        />
+        {currentProgram && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#F4D03F]/30 to-transparent"
+          />
+        )}
+      </div>
+
       {/* Offline indicator */}
       {!isOnline && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs py-1.5 flex items-center justify-center gap-1.5">
@@ -156,7 +238,7 @@ export default function HomePage() {
       )}
 
       {/* Main content area */}
-      <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden hide-scrollbar">
+      <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden hide-scrollbar relative z-10">
         {/* Header */}
         <header className="text-center pt-8 pb-4 px-4">
           <motion.div
@@ -178,7 +260,7 @@ export default function HomePage() {
           </motion.div>
         </header>
 
-        {/* Messages banner */}
+        {/* Messages/Information banner */}
         <div className="px-4 mb-2">
           <MessageBanner />
         </div>
@@ -197,28 +279,48 @@ export default function HomePage() {
           />
         </motion.div>
 
-        {/* Current program highlight */}
-        {currentProgram && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mb-4 p-4 rounded-2xl bg-gradient-to-r from-[#F4D03F]/10 to-transparent border border-[#F4D03F]/20"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-              </span>
-              <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Ahora al Aire</span>
-            </div>
-            <h3 className="text-lg font-bold text-white">{currentProgram.name}</h3>
-            {currentProgram.host && (
-              <p className="text-sm text-white/50 mt-0.5">
-                Con {currentProgram.host} | {currentProgram.startTime} - {currentProgram.endTime}
-              </p>
-            )}
-          </motion.div>
-        )}
+        {/* Current program highlight or "Música de la Tierrita" */}
+        <div className="px-4 mb-4">
+          {currentProgram ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl bg-gradient-to-r from-[#F4D03F]/10 to-transparent border border-[#F4D03F]/20"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                </span>
+                <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Ahora al Aire</span>
+              </div>
+              <h3 className="text-lg font-bold text-white">{currentProgram.name}</h3>
+              {currentProgram.host && (
+                <p className="text-sm text-white/50 mt-0.5">
+                  Con {currentProgram.host} | {currentProgram.startTime} - {currentProgram.endTime}
+                </p>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl bg-gradient-to-r from-[#F4D03F]/8 to-transparent border border-[#F4D03F]/10"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Music className="w-3.5 h-3.5 text-[#F4D03F]/60" />
+                <span className="text-[10px] font-bold text-[#F4D03F]/60 uppercase tracking-wider">Ahora suena</span>
+              </div>
+              <h3 className="text-lg font-bold text-[#F4D03F]/80">Música de la Tierrita</h3>
+              <p className="text-xs text-white/30 mt-0.5">La mejor selección musical campesina</p>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Song Request Form */}
+        <div className="px-4 mb-4">
+          <SongRequestForm />
+        </div>
 
         {/* Social links */}
         <div className="flex justify-center gap-3 px-4 mb-4">
@@ -264,14 +366,19 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Schedule section (in player view, collapsible) */}
-        <div className="px-4 pb-6">
+        {/* Schedule section */}
+        <div className="px-4 mb-4">
           <ScheduleView />
+        </div>
+
+        {/* Blog section */}
+        <div className="px-4 pb-6">
+          <BlogSection />
         </div>
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="shrink-0 bg-[#17202A]/95 backdrop-blur-lg border-t border-white/5 pb-[env(safe-area-inset-bottom)]">
+      <nav className="shrink-0 bg-[#17202A]/95 backdrop-blur-lg border-t border-white/5 pb-[env(safe-area-inset-bottom)] relative z-10">
         <div className="flex items-center justify-around py-2 px-4">
           <button
             onClick={() => setView('player')}

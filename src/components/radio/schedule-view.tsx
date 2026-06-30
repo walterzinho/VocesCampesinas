@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CalendarDays, Clock, User, Mic } from 'lucide-react';
+import { CalendarDays, Clock, User, Mic, Music } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Program {
   id: string;
@@ -15,9 +16,10 @@ interface Program {
 }
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DAY_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 export default function ScheduleView() {
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const [allPrograms, setAllPrograms] = useState<Program[]>([]);
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [loading, setLoading] = useState(true);
 
@@ -25,38 +27,23 @@ export default function ScheduleView() {
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   useEffect(() => {
-    async function fetchPrograms() {
-      try {
-        const res = await fetch('/api/programs');
-        if (res.ok) {
-          const data = await res.json();
-          setPrograms(data);
-        }
-      } catch { /* ignore */ }
-      setLoading(false);
-    }
-    fetchPrograms();
-    const interval = setInterval(fetchPrograms, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // For the selected day, fetch from /api/programs/all and filter
-  const [allPrograms, setAllPrograms] = useState<Program[]>([]);
-
-  useEffect(() => {
+    let cancelled = false;
     async function fetchAll() {
       try {
         const res = await fetch('/api/programs/all');
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           setAllPrograms(await res.json());
         }
       } catch { /* ignore */ }
+      if (!cancelled) setLoading(false);
     }
     fetchAll();
+    const interval = setInterval(fetchAll, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   const dayPrograms = allPrograms
-    .filter(p => p.dayOfWeek === selectedDay)
+    .filter(p => p.dayOfWeek === selectedDay && p.isActive)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   const isCurrentlyPlaying = (start: string, end: string) => {
@@ -68,6 +55,10 @@ export default function ScheduleView() {
     if (selectedDay !== now.getDay()) return false;
     return start > currentTime;
   };
+
+  const hasLiveProgram = dayPrograms.some(p => isCurrentlyPlaying(p.startTime, p.endTime));
+  const hasAnyProgramToday = allPrograms.some(p => p.dayOfWeek === now.getDay() && p.isActive);
+  const isToday = selectedDay === now.getDay();
 
   return (
     <div className="w-full">
@@ -92,11 +83,60 @@ export default function ScheduleView() {
 
       {/* Program list */}
       <div className="mt-3 space-y-2 max-h-72 overflow-y-auto hide-scrollbar">
-        {dayPrograms.length === 0 ? (
-          <div className="text-center py-8 text-white/30 text-sm">
-            <CalendarDays className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            Sin programación este día
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="animate-pulse h-16 rounded-xl bg-white/5" />
+            ))}
           </div>
+        ) : dayPrograms.length === 0 ? (
+          /* Empty state - Música de la Tierrita */
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative py-8 px-4 rounded-2xl overflow-hidden border border-white/5"
+          >
+            {/* Background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#F4D03F]/5 via-transparent to-transparent" />
+
+            <div className="relative flex flex-col items-center text-center">
+              {/* Musical notes decoration */}
+              <div className="relative w-16 h-16 mb-3">
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#F4D03F]/20 to-[#F4D03F]/5 flex items-center justify-center"
+                >
+                  <Music className="w-7 h-7 text-[#F4D03F]/70" />
+                </motion.div>
+                {/* Floating note particles */}
+                <motion.span
+                  animate={{ y: [-2, -8, -2], opacity: [0.3, 0.8, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+                  className="absolute -top-2 -right-2 text-lg"
+                >
+                  🎵
+                </motion.span>
+                <motion.span
+                  animate={{ y: [-2, -10, -2], opacity: [0.2, 0.7, 0.2] }}
+                  transition={{ duration: 2.5, repeat: Infinity, delay: 0.8 }}
+                  className="absolute -bottom-1 -left-2 text-sm"
+                >
+                  🎶
+                </motion.span>
+              </div>
+
+              <h4 className="text-base font-bold text-[#F4D03F] mb-1">
+                Música de la Tierrita
+              </h4>
+              <p className="text-[11px] text-white/40 max-w-[200px] leading-relaxed">
+                {isToday
+                  ? 'Disfruta la mejor música campesina mientras no hay programación en vivo'
+                  : `Sin programación para el ${DAY_NAMES[selectedDay]}`
+                }
+              </p>
+            </div>
+          </motion.div>
         ) : (
           dayPrograms.map((prog) => {
             const isLive = isCurrentlyPlaying(prog.startTime, prog.endTime);
@@ -157,6 +197,20 @@ export default function ScheduleView() {
               </div>
             );
           })
+        )}
+
+        {/* Show "Música de la Tierrita" note when today has no current live show */}
+        {!loading && !hasLiveProgram && isToday && dayPrograms.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F4D03F]/5 border border-[#F4D03F]/10"
+          >
+            <Music className="w-3.5 h-3.5 text-[#F4D03F]/50 shrink-0" />
+            <span className="text-[11px] text-[#F4D03F]/60">
+              Ahora: <strong className="text-[#F4D03F]/80">Música de la Tierrita</strong>
+            </span>
+          </motion.div>
         )}
       </div>
     </div>

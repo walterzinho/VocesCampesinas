@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check } from 'lucide-react';
+import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,10 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
-const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DAY_FULL_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 interface Program {
   id: string;
@@ -35,6 +35,15 @@ interface Message {
   priority: number;
 }
 
+interface SongRequest {
+  id: string;
+  listenerName: string | null;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 interface AppSettings {
   streamUrl: string;
   stationName: string;
@@ -53,7 +62,11 @@ interface Log {
   createdAt: string;
 }
 
-export default function AdminPanel() {
+interface AdminPanelProps {
+  onBack: () => void;
+}
+
+export default function AdminPanel({ onBack }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,6 +74,7 @@ export default function AdminPanel() {
   // Data states
   const [programs, setPrograms] = useState<Program[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [songRequests, setSongRequests] = useState<SongRequest[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     streamUrl: '', stationName: '', stationSlogan: '',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '',
@@ -105,11 +119,12 @@ export default function AdminPanel() {
 
   const fetchAllData = useCallback(async () => {
     try {
-      const [progRes, msgRes, setRes, logRes] = await Promise.all([
+      const [progRes, msgRes, setRes, logRes, reqRes] = await Promise.all([
         fetch('/api/programs/all', authHeader()),
         fetch('/api/messages/all', authHeader()),
         fetch('/api/settings', authHeader()),
         fetch('/api/admin', authHeader()),
+        fetch('/api/requests', authHeader()),
       ]);
 
       if (progRes.ok) setPrograms(await progRes.json());
@@ -119,6 +134,7 @@ export default function AdminPanel() {
         setSettings(prev => ({ ...prev, ...setData }));
       }
       if (logRes.ok) setLogs(await logRes.json());
+      if (reqRes.ok) setSongRequests(await reqRes.json());
     } catch { /* ignore */ }
   }, [authHeader]);
 
@@ -129,6 +145,24 @@ export default function AdminPanel() {
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, fetchAllData]);
+
+  // Quick day selection helpers
+  const setWeekdays = () => setSelectedDays([1, 2, 3, 4, 5]);
+  const setWeekend = () => setSelectedDays([0, 6]);
+  const toggleAllDays = () => {
+    if (selectedDays.length === 7) setSelectedDays([]);
+    else setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+  };
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  const isQuickActive = (days: number[]) => {
+    if (selectedDays.length !== days.length) return false;
+    return days.every(d => selectedDays.includes(d));
+  };
 
   // Program CRUD
   const saveProgram = async () => {
@@ -155,14 +189,12 @@ export default function AdminPanel() {
     try {
       let res;
       if (isEditingExisting && editingProgram.id && selectedDays.length === 1) {
-        // Editing a single existing entry
         res = await fetch('/api/programs', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', ...authHeader().headers },
           body: JSON.stringify({ id: editingProgram.id, ...basePayload, dayOfWeek: selectedDays[0] }),
         });
       } else if (isEditingExisting) {
-        // Editing an existing program with multiple days: delete old + create new
         const oldName = editingProgram.name;
         res = await fetch('/api/programs', {
           method: 'PUT',
@@ -174,7 +206,6 @@ export default function AdminPanel() {
           }),
         });
       } else {
-        // Creating new program(s)
         res = await fetch('/api/programs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeader().headers },
@@ -212,20 +243,6 @@ export default function AdminPanel() {
     }
   };
 
-  const toggleAllDays = () => {
-    if (selectedDays.length === 7) {
-      setSelectedDays([]);
-    } else {
-      setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
-    }
-  };
-
-  const toggleDay = (day: number) => {
-    setSelectedDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    );
-  };
-
   // Group programs by name for display
   const groupedPrograms = programs.reduce((acc, prog) => {
     const key = prog.name;
@@ -237,9 +254,8 @@ export default function AdminPanel() {
   const openEditProgram = (prog: Program) => {
     setIsEditingExisting(true);
     setEditingProgram(prog);
-    // Find all days this program airs
     const sameNamePrograms = programs.filter(p => p.name === prog.name);
- setSelectedDays(sameNamePrograms.map(p => p.dayOfWeek));
+    setSelectedDays(sameNamePrograms.map(p => p.dayOfWeek));
     setProgramDialog(true);
   };
 
@@ -252,7 +268,6 @@ export default function AdminPanel() {
 
   const toggleProgramActive = async (prog: Program) => {
     try {
-      // Toggle all entries with the same name
       const sameName = programs.filter(p => p.name === prog.name);
       const newActive = !prog.isActive;
       for (const p of sameName) {
@@ -297,7 +312,7 @@ export default function AdminPanel() {
       }
 
       if (res.ok) {
-        toast.success(editingMessage.id ? 'Mensaje actualizado' : 'Mensaje creado');
+        toast.success(editingMessage.id ? 'Información actualizada' : 'Información creada');
         setMessageDialog(false);
         setEditingMessage({});
         fetchAllData();
@@ -314,7 +329,35 @@ export default function AdminPanel() {
         ...authHeader(),
       });
       if (res.ok) {
-        toast.success('Mensaje eliminado');
+        toast.success('Eliminado');
+        fetchAllData();
+      }
+    } catch {
+      toast.error('Error al eliminar');
+    }
+  };
+
+  // Mark request as read
+  const markRequestRead = async (id: string, read: boolean) => {
+    try {
+      await fetch('/api/requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+        body: JSON.stringify({ id, isRead: read }),
+      });
+      fetchAllData();
+    } catch { /* ignore */ }
+  };
+
+  // Delete request
+  const deleteRequest = async (id: string) => {
+    try {
+      const res = await fetch(`/api/requests?id=${id}`, {
+        method: 'DELETE',
+        ...authHeader(),
+      });
+      if (res.ok) {
+        toast.success('Petición eliminada');
         fetchAllData();
       }
     } catch {
@@ -347,6 +390,13 @@ export default function AdminPanel() {
     return (
       <div className="min-h-screen bg-[#17202A] flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+          <button
+            onClick={onBack}
+            className="absolute top-4 left-4 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-white/60" />
+          </button>
+
           <div className="flex flex-col items-center mb-6">
             <div className="w-16 h-16 rounded-full bg-[#F4D03F]/10 flex items-center justify-center mb-3">
               <Shield className="w-8 h-8 text-[#F4D03F]" />
@@ -379,14 +429,12 @@ export default function AdminPanel() {
               )}
             </Button>
           </div>
-
-          <p className="text-center text-[10px] text-white/20 mt-6">
-            Contraseña por defecto: voces2024
-          </p>
         </div>
       </div>
     );
   }
+
+  const unreadRequests = songRequests.filter(r => !r.isRead).length;
 
   // Admin Dashboard
   return (
@@ -395,6 +443,13 @@ export default function AdminPanel() {
       <header className="sticky top-0 z-50 bg-[#17202A]/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              title="Volver al reproductor"
+            >
+              <ArrowLeft className="w-4 h-4 text-white/60" />
+            </button>
             <div className="w-8 h-8 rounded-lg bg-[#F4D03F] flex items-center justify-center">
               <Radio className="w-4 h-4 text-[#17202A]" />
             </div>
@@ -416,14 +471,21 @@ export default function AdminPanel() {
 
       <main className="max-w-4xl mx-auto p-4 pb-20">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-2xl font-bold text-[#F4D03F]">{programs.length}</p>
+            <p className="text-2xl font-bold text-[#F4D03F]">{Object.keys(groupedPrograms).length}</p>
             <p className="text-[10px] text-white/40">Programas</p>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <p className="text-2xl font-bold text-[#F4D03F]">{messages.filter(m => m.isActive).length}</p>
-            <p className="text-[10px] text-white/40">Mensajes Activos</p>
+            <p className="text-[10px] text-white/40">Info Activos</p>
+          </div>
+          <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative">
+            <p className="text-2xl font-bold text-[#F4D03F]">{songRequests.length}</p>
+            <p className="text-[10px] text-white/40">Peticiones</p>
+            {unreadRequests > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center">{unreadRequests}</span>
+            )}
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <p className="text-2xl font-bold text-[#F4D03F]">{logs.length}</p>
@@ -437,7 +499,13 @@ export default function AdminPanel() {
               <Clock className="w-3.5 h-3.5 mr-1" /> Programación
             </TabsTrigger>
             <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
-              <MessageSquare className="w-3.5 h-3.5 mr-1" /> Mensajes
+              <Bell className="w-3.5 h-3.5 mr-1" /> Información
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg relative">
+              <Send className="w-3.5 h-3.5 mr-1" /> Peticiones
+              {unreadRequests > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full">{unreadRequests}</span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
               <Settings className="w-3.5 h-3.5 mr-1" /> Config
@@ -458,7 +526,7 @@ export default function AdminPanel() {
                     <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
+                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-white">
                       {isEditingExisting ? 'Editar Programa' : 'Nuevo Programa'}
@@ -483,40 +551,74 @@ export default function AdminPanel() {
                       onChange={e => setEditingProgram(prev => ({ ...prev, description: e.target.value }))}
                       className="bg-white/5 border-white/10 text-white min-h-[60px]"
                     />
-                    {/* Day Selection */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] text-white/40">Dias de emision *</label>
+
+                    {/* Day Selection with Quick Selects */}
+                    <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                      <label className="text-xs text-white/60 font-medium mb-2 block">Días de emisión *</label>
+
+                      {/* Quick select buttons */}
+                      <div className="flex gap-1.5 mb-3">
                         <button
                           type="button"
                           onClick={toggleAllDays}
-                          className={selectedDays.length === 7 ? "text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors bg-[#F4D03F] text-[#17202A]" : "text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors bg-white/10 text-white/50 hover:bg-white/15"}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+                            isQuickActive([0, 1, 2, 3, 4, 5, 6])
+                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+                          }`}
                         >
-                          {selectedDays.length === 7 ? "Quitar todos" : "Todos"}
+                          Todos
+                        </button>
+                        <button
+                          type="button"
+                          onClick={setWeekdays}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+                            isQuickActive([1, 2, 3, 4, 5])
+                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+                          }`}
+                        >
+                          Lun - Vie
+                        </button>
+                        <button
+                          type="button"
+                          onClick={setWeekend}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+                            isQuickActive([0, 6])
+                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+                          }`}
+                        >
+                          Fin de Semana
                         </button>
                       </div>
-                      <div className="flex gap-1.5 flex-wrap">
+
+                      {/* Individual day buttons */}
+                      <div className="grid grid-cols-7 gap-1">
                         {DAY_NAMES.map((day, idx) => (
                           <button
                             key={idx}
                             type="button"
                             onClick={() => toggleDay(idx)}
-                            className={selectedDays.includes(idx)
-                              ? "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border bg-[#F4D03F]/15 border-[#F4D03F]/40 text-[#F4D03F]"
-                              : "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border bg-white/[0.03] border-white/5 text-white/40 hover:border-white/15 hover:text-white/60"
-                            }
+                            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-all border ${
+                              selectedDays.includes(idx)
+                                ? 'bg-[#F4D03F]/15 border-[#F4D03F]/40 text-[#F4D03F]'
+                                : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'
+                            }`}
                           >
                             {selectedDays.includes(idx) && <Check className="w-3 h-3" />}
-                            {day.substring(0, 3)}
+                            <span>{day}</span>
                           </button>
                         ))}
                       </div>
+
                       {selectedDays.length > 0 && (
-                        <p className="text-[10px] text-white/25 mt-1">
-                          {selectedDays.length === 1 ? "1 entrada" : selectedDays.length + " entradas"} ({selectedDays.map(d => DAY_NAMES[d].substring(0, 3)).join(", ")})
+                        <p className="text-[10px] text-white/25 mt-2 text-center">
+                          Se creará {selectedDays.length === 1 ? '1 entrada' : `${selectedDays.length} entradas`} — {selectedDays.map(d => DAY_FULL_NAMES[d]).join(', ')}
                         </p>
                       )}
                     </div>
+
                     <div>
                       <label className="text-[10px] text-white/40 mb-1 block">Género</label>
                       <Input
@@ -571,7 +673,7 @@ export default function AdminPanel() {
                   const allDays = progs.every(p => p.isActive);
                   const dayLabels = progs
                     .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
-                    .map(p => DAY_NAMES[p.dayOfWeek].substring(0, 3));
+                    .map(p => DAY_NAMES[p.dayOfWeek]);
 
                   return (
                     <div key={name} className={`p-3 rounded-xl border transition-all ${allDays ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
@@ -592,11 +694,6 @@ export default function AdminPanel() {
                             {firstProg.host && ` | ${firstProg.host}`}
                             {firstProg.genre && ` | ${firstProg.genre}`}
                           </p>
-                          {dayCount > 1 && (
-                            <p className="text-[10px] text-white/20 mt-0.5">
-                              {dayCount} horario{dayCount > 1 ? 's' : ''} configurado{dayCount > 1 ? 's' : ''}
-                            </p>
-                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <Switch
@@ -609,7 +706,7 @@ export default function AdminPanel() {
                             size="sm"
                             onClick={() => openEditProgram(firstProg)}
                             className="h-7 w-7 p-0 text-white/40 hover:text-white"
-                            title="Editar todos los días de este programa"
+                            title="Editar"
                           >
                             <Settings className="w-3.5 h-3.5" />
                           </Button>
@@ -618,7 +715,7 @@ export default function AdminPanel() {
                             size="sm"
                             onClick={() => deleteProgram(firstProg.id, name)}
                             className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
-                            title="Eliminar de todos los días"
+                            title="Eliminar"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -631,10 +728,10 @@ export default function AdminPanel() {
             </div>
           </TabsContent>
 
-          {/* MESSAGES TAB */}
+          {/* MESSAGES TAB (renamed to Información) */}
           <TabsContent value="messages" className="mt-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-white/70">Mensajes y Anuncios</h3>
+              <h3 className="text-sm font-semibold text-white/70">Información y Anuncios</h3>
               <Dialog open={messageDialog} onOpenChange={setMessageDialog}>
                 <DialogTrigger asChild>
                   <Button
@@ -648,7 +745,7 @@ export default function AdminPanel() {
                 <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
                   <DialogHeader>
                     <DialogTitle className="text-white">
-                      {editingMessage.id ? 'Editar Mensaje' : 'Nuevo Mensaje'}
+                      {editingMessage.id ? 'Editar Información' : 'Nueva Información'}
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-3 mt-2">
@@ -692,7 +789,7 @@ export default function AdminPanel() {
                         checked={editingMessage.isActive ?? true}
                         onCheckedChange={v => setEditingMessage(prev => ({ ...prev, isActive: v }))}
                       />
-                      <span className="text-xs text-white/60">Mensaje activo</span>
+                      <span className="text-xs text-white/60">Activo</span>
                     </div>
                     <Button onClick={saveMessage} className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D]">
                       <Save className="w-4 h-4 mr-1" /> Guardar
@@ -704,7 +801,7 @@ export default function AdminPanel() {
 
             <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
               {messages.length === 0 ? (
-                <p className="text-center text-white/30 text-sm py-8">No hay mensajes</p>
+                <p className="text-center text-white/30 text-sm py-8">No hay mensajes de información</p>
               ) : (
                 messages.map(msg => (
                   <div key={msg.id} className={`p-3 rounded-xl border ${msg.isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
@@ -717,7 +814,7 @@ export default function AdminPanel() {
                             msg.type === 'alert' ? 'bg-amber-500/10 text-amber-400' :
                             'bg-[#F4D03F]/10 text-[#F4D03F]'
                           }`}>
-                            {msg.type}
+                            {msg.type === 'info' ? 'Info' : msg.type === 'alert' ? 'Alerta' : 'Promo'}
                           </span>
                           <span className="text-[10px] text-white/30">Prioridad: {msg.priority}</span>
                         </div>
@@ -755,6 +852,87 @@ export default function AdminPanel() {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* SONG REQUESTS TAB */}
+          <TabsContent value="requests" className="mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-white/70">
+                Peticiones y Mensajes de Oyentes
+              </h3>
+              {unreadRequests > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    for (const r of songRequests.filter(r => !r.isRead)) {
+                      await markRequestRead(r.id, true);
+                    }
+                  }}
+                  className="text-xs text-[#F4D03F] hover:bg-[#F4D03F]/10"
+                >
+                  <Check className="w-3 h-3 mr-1" /> Marcar todo leído
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+              {songRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <Send className="w-10 h-10 mx-auto mb-2 text-white/20" />
+                  <p className="text-white/30 text-sm">No hay peticiones aún</p>
+                  <p className="text-white/20 text-xs mt-1">Los oyentes pueden enviar peticiones desde la app</p>
+                </div>
+              ) : (
+                songRequests.map(req => {
+                  const typeIcon = req.type === 'greeting' ? Heart : req.type === 'message' ? MessageSquare : Music;
+                  const TypeIcon = typeIcon;
+                  const typeLabel = req.type === 'greeting' ? 'Saludo' : req.type === 'message' ? 'Mensaje' : 'Petición';
+                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-[#F4D03F] bg-[#F4D03F]/10';
+
+                  return (
+                    <div key={req.id} className={`p-3 rounded-xl border transition-all ${!req.isRead ? 'bg-white/5 border-[#F4D03F]/20' : 'bg-white/[0.02] border-white/5'}`}>
+                      <div className="flex items-start gap-2">
+                        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${typeColor}`}>
+                          <TypeIcon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>{typeLabel}</span>
+                            {req.listenerName && (
+                              <span className="text-[11px] text-white/60">{req.listenerName}</span>
+                            )}
+                            <span className="text-[10px] text-white/20 ml-auto">
+                              {new Date(req.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className={`text-sm ${!req.isRead ? 'text-white' : 'text-white/60'}`}>{req.message}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markRequestRead(req.id, !req.isRead)}
+                            className="h-6 w-6 p-0 text-white/30 hover:text-white"
+                            title={req.isRead ? 'Marcar no leído' : 'Marcar leído'}
+                          >
+                            {req.isRead ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteRequest(req.id)}
+                            className="h-6 w-6 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </TabsContent>
@@ -832,7 +1010,7 @@ export default function AdminPanel() {
             <div>
               <h3 className="text-sm font-semibold text-white/70 mb-3">Seguridad</h3>
               <div>
-                <label className="text-[10px] text-white/40 mb-1 block">Nueva Contraseña de Admin</label>
+                <label className="text-[10px] text-white/40 mb-1 block">Cambiar Contraseña de Admin</label>
                 <Input
                   type="password"
                   placeholder="Escribe nueva contraseña y presiona Enter"

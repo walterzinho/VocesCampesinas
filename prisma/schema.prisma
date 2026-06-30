@@ -45,3 +45,12 @@ model AdminLog {
   detail    String?
   createdAt DateTime @default(now())
 }
+
+model SongRequest {
+  id        String   @id @default(cuid())
+  listenerName String?
+  message   String
+  type      String   @default("request") // request, greeting, message
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
