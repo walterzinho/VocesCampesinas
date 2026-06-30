@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Program {
+  id        String   @id @default(cuid())
+  name      String
+  host      String?
+  description String?
+  dayOfWeek Int      // 0=Dom, 1=Lun, ..., 6=Sab
+  startTime String   // "06:00"
+  endTime   String   // "08:00"
+  isActive  Boolean  @default(true)
+  imageUrl  String?
+  genre     String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  type      String   @default("info") // info, alert, promotion
+  isActive  Boolean  @default(true)
+  priority  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Settings {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+}

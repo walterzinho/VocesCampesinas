@@ -1,0 +1,29 @@
+{
+  "name": "Voces Campesinas - Emisora Digital",
+  "short_name": "Voces Campesinas",
+  "description": "El Campo Nos Une - Tu emisora digital del campo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#17202A",
+  "theme_color": "#17202A",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["music", "entertainment"],
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
