@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -71,6 +72,8 @@ export default function AdminPanel() {
   const [programDialog, setProgramDialog] = useState(false);
   const [messageDialog, setMessageDialog] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Partial<Program>>({});
+  const [selectedDays, setSelectedDays] = useState<number[]>([new Date().getDay()]);
+  const [isEditingExisting, setIsEditingExisting] = useState(false);
   const [editingMessage, setEditingMessage] = useState<Partial<Message>>({});
   const [expandedLogs, setExpandedLogs] = useState(false);
 
@@ -133,12 +136,15 @@ export default function AdminPanel() {
       toast.error('Completa los campos obligatorios');
       return;
     }
+    if (selectedDays.length === 0) {
+      toast.error('Selecciona al menos un día');
+      return;
+    }
 
-    const payload = {
+    const basePayload = {
       name: editingProgram.name,
       host: editingProgram.host || '',
       description: editingProgram.description || '',
-      dayOfWeek: editingProgram.dayOfWeek ?? new Date().getDay(),
       startTime: editingProgram.startTime,
       endTime: editingProgram.endTime,
       genre: editingProgram.genre || '',
@@ -148,24 +154,41 @@ export default function AdminPanel() {
 
     try {
       let res;
-      if (editingProgram.id) {
+      if (isEditingExisting && editingProgram.id && selectedDays.length === 1) {
+        // Editing a single existing entry
         res = await fetch('/api/programs', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', ...authHeader().headers },
-          body: JSON.stringify({ id: editingProgram.id, ...payload }),
+          body: JSON.stringify({ id: editingProgram.id, ...basePayload, dayOfWeek: selectedDays[0] }),
+        });
+      } else if (isEditingExisting) {
+        // Editing an existing program with multiple days: delete old + create new
+        const oldName = editingProgram.name;
+        res = await fetch('/api/programs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+          body: JSON.stringify({
+            batchUpdateName: oldName,
+            days: selectedDays,
+            ...basePayload,
+          }),
         });
       } else {
+        // Creating new program(s)
         res = await fetch('/api/programs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeader().headers },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...basePayload, days: selectedDays }),
         });
       }
 
       if (res.ok) {
-        toast.success(editingProgram.id ? 'Programa actualizado' : 'Programa creado');
+        const dayLabel = selectedDays.length === 7 ? 'todos los días' : `${selectedDays.length} día(s)`;
+        toast.success(`${isEditingExisting ? 'Programa actualizado' : 'Programa creado'} para ${dayLabel}`);
         setProgramDialog(false);
         setEditingProgram({});
+        setSelectedDays([new Date().getDay()]);
+        setIsEditingExisting(false);
         fetchAllData();
       }
     } catch {
@@ -173,14 +196,15 @@ export default function AdminPanel() {
     }
   };
 
-  const deleteProgram = async (id: string) => {
+  const deleteProgram = async (id: string, name?: string) => {
     try {
-      const res = await fetch(`/api/programs?id=${id}`, {
+      const params = name ? `?name=${encodeURIComponent(name)}` : `?id=${id}`;
+      const res = await fetch(`/api/programs${params}`, {
         method: 'DELETE',
         ...authHeader(),
       });
       if (res.ok) {
-        toast.success('Programa eliminado');
+        toast.success(name ? `"${name}" eliminado de todos los días` : 'Programa eliminado');
         fetchAllData();
       }
     } catch {
@@ -188,14 +212,57 @@ export default function AdminPanel() {
     }
   };
 
+  const toggleAllDays = () => {
+    if (selectedDays.length === 7) {
+      setSelectedDays([]);
+    } else {
+      setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+    }
+  };
+
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  // Group programs by name for display
+  const groupedPrograms = programs.reduce((acc, prog) => {
+    const key = prog.name;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(prog);
+    return acc;
+  }, {} as Record<string, Program[]>);
+
+  const openEditProgram = (prog: Program) => {
+    setIsEditingExisting(true);
+    setEditingProgram(prog);
+    // Find all days this program airs
+    const sameNamePrograms = programs.filter(p => p.name === prog.name);
+ setSelectedDays(sameNamePrograms.map(p => p.dayOfWeek));
+    setProgramDialog(true);
+  };
+
+  const openNewProgram = () => {
+    setIsEditingExisting(false);
+    setEditingProgram({ isActive: true, sortOrder: 0 });
+    setSelectedDays([new Date().getDay()]);
+    setProgramDialog(true);
+  };
+
   const toggleProgramActive = async (prog: Program) => {
     try {
-      const res = await fetch('/api/programs', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
-        body: JSON.stringify({ id: prog.id, isActive: !prog.isActive }),
-      });
-      if (res.ok) fetchAllData();
+      // Toggle all entries with the same name
+      const sameName = programs.filter(p => p.name === prog.name);
+      const newActive = !prog.isActive;
+      for (const p of sameName) {
+        await fetch('/api/programs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+          body: JSON.stringify({ id: p.id, isActive: newActive }),
+        });
+      }
+      fetchAllData();
     } catch { /* ignore */ }
   };
 
@@ -385,7 +452,7 @@ export default function AdminPanel() {
                 <DialogTrigger asChild>
                   <Button
                     size="sm"
-                    onClick={() => setEditingProgram({ dayOfWeek: new Date().getDay(), isActive: true, sortOrder: 0 })}
+                    onClick={openNewProgram}
                     className="bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] text-xs h-8"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
@@ -394,7 +461,7 @@ export default function AdminPanel() {
                 <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
                   <DialogHeader>
                     <DialogTitle className="text-white">
-                      {editingProgram.id ? 'Editar Programa' : 'Nuevo Programa'}
+                      {isEditingExisting ? 'Editar Programa' : 'Nuevo Programa'}
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-3 mt-2">
@@ -416,32 +483,48 @@ export default function AdminPanel() {
                       onChange={e => setEditingProgram(prev => ({ ...prev, description: e.target.value }))}
                       className="bg-white/5 border-white/10 text-white min-h-[60px]"
                     />
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] text-white/40 mb-1 block">Día</label>
-                        <Select
-                          value={String(editingProgram.dayOfWeek ?? 0)}
-                          onValueChange={v => setEditingProgram(prev => ({ ...prev, dayOfWeek: parseInt(v) }))}
+                    {/* Day Selection */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] text-white/40">Dias de emision *</label>
+                        <button
+                          type="button"
+                          onClick={toggleAllDays}
+                          className={selectedDays.length === 7 ? "text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors bg-[#F4D03F] text-[#17202A]" : "text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors bg-white/10 text-white/50 hover:bg-white/15"}
                         >
-                          <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[#1a2332] border-white/10">
-                            {DAY_NAMES.map((d, i) => (
-                              <SelectItem key={i} value={String(i)} className="text-white text-xs">{d}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          {selectedDays.length === 7 ? "Quitar todos" : "Todos"}
+                        </button>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-white/40 mb-1 block">Género</label>
-                        <Input
-                          placeholder="Ej: Folclor"
-                          value={editingProgram.genre || ''}
-                          onChange={e => setEditingProgram(prev => ({ ...prev, genre: e.target.value }))}
-                          className="bg-white/5 border-white/10 text-white text-xs"
-                        />
+                      <div className="flex gap-1.5 flex-wrap">
+                        {DAY_NAMES.map((day, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleDay(idx)}
+                            className={selectedDays.includes(idx)
+                              ? "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border bg-[#F4D03F]/15 border-[#F4D03F]/40 text-[#F4D03F]"
+                              : "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border bg-white/[0.03] border-white/5 text-white/40 hover:border-white/15 hover:text-white/60"
+                            }
+                          >
+                            {selectedDays.includes(idx) && <Check className="w-3 h-3" />}
+                            {day.substring(0, 3)}
+                          </button>
+                        ))}
                       </div>
+                      {selectedDays.length > 0 && (
+                        <p className="text-[10px] text-white/25 mt-1">
+                          {selectedDays.length === 1 ? "1 entrada" : selectedDays.length + " entradas"} ({selectedDays.map(d => DAY_NAMES[d].substring(0, 3)).join(", ")})
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-white/40 mb-1 block">Género</label>
+                      <Input
+                        placeholder="Ej: Folclor"
+                        value={editingProgram.genre || ''}
+                        onChange={e => setEditingProgram(prev => ({ ...prev, genre: e.target.value }))}
+                        className="bg-white/5 border-white/10 text-white text-xs"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -478,52 +561,72 @@ export default function AdminPanel() {
               </Dialog>
             </div>
 
-            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
-              {programs.length === 0 ? (
+            <div className="space-y-3 max-h-[500px] overflow-y-auto hide-scrollbar">
+              {Object.keys(groupedPrograms).length === 0 ? (
                 <p className="text-center text-white/30 text-sm py-8">No hay programas creados</p>
               ) : (
-                programs.map(prog => (
-                  <div key={prog.id} className={`p-3 rounded-xl border transition-all ${prog.isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-semibold text-white truncate">{prog.name}</h4>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/40">
-                            {DAY_NAMES[prog.dayOfWeek]?.substring(0, 3)}
-                          </span>
+                Object.entries(groupedPrograms).map(([name, progs]) => {
+                  const firstProg = progs[0];
+                  const dayCount = progs.length;
+                  const allDays = progs.every(p => p.isActive);
+                  const dayLabels = progs
+                    .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+                    .map(p => DAY_NAMES[p.dayOfWeek].substring(0, 3));
+
+                  return (
+                    <div key={name} className={`p-3 rounded-xl border transition-all ${allDays ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-semibold text-white truncate">{name}</h4>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                              dayCount === 7
+                                ? 'bg-[#F4D03F]/20 text-[#F4D03F]'
+                                : 'bg-white/10 text-white/40'
+                            }`}>
+                              {dayCount === 7 ? 'Todos los días' : dayLabels.join(' · ')}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-white/40 mt-0.5">
+                            {firstProg.startTime} - {firstProg.endTime}
+                            {firstProg.host && ` | ${firstProg.host}`}
+                            {firstProg.genre && ` | ${firstProg.genre}`}
+                          </p>
+                          {dayCount > 1 && (
+                            <p className="text-[10px] text-white/20 mt-0.5">
+                              {dayCount} horario{dayCount > 1 ? 's' : ''} configurado{dayCount > 1 ? 's' : ''}
+                            </p>
+                          )}
                         </div>
-                        <p className="text-[11px] text-white/40 mt-0.5">
-                          {prog.startTime} - {prog.endTime}
-                          {prog.host && ` | ${prog.host}`}
-                          {prog.genre && ` | ${prog.genre}`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Switch
-                          checked={prog.isActive}
-                          onCheckedChange={() => toggleProgramActive(prog)}
-                          className="scale-75"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setEditingProgram(prog); setProgramDialog(true); }}
-                          className="h-7 w-7 p-0 text-white/40 hover:text-white"
-                        >
-                          <Settings className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteProgram(prog.id)}
-                          className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Switch
+                            checked={allDays}
+                            onCheckedChange={() => toggleProgramActive(firstProg)}
+                            className="scale-75"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditProgram(firstProg)}
+                            className="h-7 w-7 p-0 text-white/40 hover:text-white"
+                            title="Editar todos los días de este programa"
+                          >
+                            <Settings className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteProgram(firstProg.id, name)}
+                            className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+                            title="Eliminar de todos los días"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </TabsContent>
@@ -770,11 +873,6 @@ export default function AdminPanel() {
           </TabsContent>
         </Tabs>
       </main>
-
-      <style jsx global>{`
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
     </div>
   );
 }

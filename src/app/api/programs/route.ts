@@ -25,13 +25,34 @@ export async function GET() {
   }
 }
 
-// POST /api/programs - admin only
+// POST /api/programs - admin only (single or batch)
 export async function POST(request: NextRequest) {
   const isAdmin = await verifyAdmin(request);
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const body = await request.json();
+
+    // Batch mode: create program for multiple days
+    if (body.days && Array.isArray(body.days) && body.days.length > 0) {
+      const { days, ...baseData } = body;
+      const results = [];
+      for (const day of days) {
+        const program = await db.program.create({
+          data: { ...baseData, dayOfWeek: day },
+        });
+        results.push(program);
+      }
+      await db.adminLog.create({
+        data: {
+          action: 'CREATE_PROGRAM_BATCH',
+          detail: `${body.name} x${days.length} días [${days.join(',')}]`,
+        },
+      });
+      return NextResponse.json(results, { status: 201 });
+    }
+
+    // Single mode
     const program = await db.program.create({ data: body });
     await db.adminLog.create({ data: { action: 'CREATE_PROGRAM', detail: program.name } });
     return NextResponse.json(program, { status: 201 });
@@ -47,6 +68,34 @@ export async function PUT(request: NextRequest) {
 
   try {
     const { id, ...data } = await request.json();
+
+    // Batch update: update all days for a program name
+    if (data.batchUpdateName && data.days) {
+      const { batchUpdateName, days, ...baseData } = data;
+      // Delete old entries for this program name on selected days
+      if (days.length > 0) {
+        await db.program.deleteMany({
+          where: {
+            name: batchUpdateName,
+            dayOfWeek: { in: days },
+          },
+        });
+      }
+      // Create new entries
+      const results = [];
+      for (const day of days) {
+        const program = await db.program.create({
+          data: { ...baseData, dayOfWeek: day },
+        });
+        results.push(program);
+      }
+      await db.adminLog.create({
+        data: { action: 'UPDATE_PROGRAM_BATCH', detail: `${baseData.name} x${days.length} días` },
+      });
+      return NextResponse.json(results);
+    }
+
+    // Single update
     const program = await db.program.update({ where: { id }, data });
     await db.adminLog.create({ data: { action: 'UPDATE_PROGRAM', detail: program.name } });
     return NextResponse.json(program);
@@ -63,9 +112,19 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
-    await db.program.delete({ where: { id } });
-    await db.adminLog.create({ data: { action: 'DELETE_PROGRAM', detail: id } });
+    const name = searchParams.get('name');
+
+    if (name) {
+      // Delete all entries with this name (multi-day deletion)
+      await db.program.deleteMany({ where: { name } });
+      await db.adminLog.create({ data: { action: 'DELETE_PROGRAM_BATCH', detail: name } });
+    } else if (id) {
+      await db.program.delete({ where: { id } });
+      await db.adminLog.create({ data: { action: 'DELETE_PROGRAM', detail: id } });
+    } else {
+      return NextResponse.json({ error: 'ID or name required' }, { status: 400 });
+    }
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Error deleting program' }, { status: 500 });
