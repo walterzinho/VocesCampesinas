@@ -32,6 +32,7 @@ interface Message {
   id: string;
   content: string;
   type: string;
+  imageUrl: string | null;
   isActive: boolean;
   priority: number;
 }
@@ -168,6 +169,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   // Image upload handler
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingMsgImage, setUploadingMsgImage] = useState(false);
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -192,6 +194,32 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.error('Error al subir imagen');
     }
     setUploadingImage(false);
+  };
+
+  const handleMessageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingMsgImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('field', 'message');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: authHeader().headers,
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEditingMessage(prev => ({ ...prev, imageUrl: data.url }));
+        toast.success('Imagen subida');
+      } else {
+        toast.error('Error al subir imagen');
+      }
+    } catch {
+      toast.error('Error al subir imagen');
+    }
+    setUploadingMsgImage(false);
   };
 
   // Program CRUD
@@ -324,6 +352,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       type: editingMessage.type || 'info',
       priority: editingMessage.priority ?? 0,
       isActive: editingMessage.isActive ?? true,
+      imageUrl: editingMessage.imageUrl || null,
     };
 
     try {
@@ -849,6 +878,43 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                         />
                       </div>
                     </div>
+                    {/* Image Upload for message */}
+                    <div>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen (1:1 recomendado)</label>
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                          <span className="text-xs text-white/50 truncate">
+                            {editingMessage.imageUrl
+                              ? editingMessage.imageUrl.replace('/uploads/', '')
+                              : 'Seleccionar imagen...'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleMessageImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {uploadingMsgImage && (
+                          <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+                        )}
+                        {editingMessage.imageUrl && (
+                          <button
+                            onClick={() => setEditingMessage(prev => ({ ...prev, imageUrl: '' }))}
+                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+                            title="Quitar imagen"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      {editingMessage.imageUrl && (
+                        <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+                          <img src={editingMessage.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={editingMessage.isActive ?? true}
@@ -870,9 +936,19 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
               ) : (
                 messages.map(msg => (
                   <div key={msg.id} className={`p-3 rounded-xl border ${msg.isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3">
+                      {/* Thumbnail */}
+                      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                        {msg.imageUrl ? (
+                          <img src={msg.imageUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-white/15" />
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white">{msg.content}</p>
+                        <p className="text-sm text-white line-clamp-2">{msg.content}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                             msg.type === 'info' ? 'bg-sky-500/10 text-sky-400' :

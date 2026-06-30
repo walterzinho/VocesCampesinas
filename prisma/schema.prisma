@@ -27,6 +27,7 @@ model Message {
   id        String   @id @default(cuid())
   content   String
   type      String   @default("info") // info, alert, promotion
+  imageUrl  String?
   isActive  Boolean  @default(true)
   priority  Int      @default(0)
   createdAt DateTime @default(now())
