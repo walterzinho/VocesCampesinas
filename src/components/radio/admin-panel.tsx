@@ -190,28 +190,46 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   // Image upload handler
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingMsgImage, setUploadingMsgImage] = useState(false);
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingImage(true);
+  const uploadFile = async (file: File, field: string): Promise<string | null> => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen es muy grande (máximo 5MB)');
+      return null;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes');
+      return null;
+    }
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('field', 'program');
+      formData.append('field', field);
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: authHeader().headers,
+        headers: { 'Authorization': `Bearer ${password}` },
         body: formData,
       });
       if (res.ok) {
         const data = await res.json();
-        setEditingProgram(prev => ({ ...prev, imageUrl: data.url }));
-        toast.success('Imagen subida');
+        return data.url;
       } else {
-        toast.error('Error al subir imagen');
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || 'Error al subir imagen');
+        return null;
       }
-    } catch {
-      toast.error('Error al subir imagen');
+    } catch (err) {
+      toast.error('Error de conexión al subir');
+      return null;
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    const url = await uploadFile(file, 'program');
+    if (url) {
+      setEditingProgram(prev => ({ ...prev, imageUrl: url }));
+      toast.success('Imagen subida');
     }
     setUploadingImage(false);
   };
@@ -220,24 +238,10 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingMsgImage(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('field', 'message');
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: authHeader().headers,
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setEditingMessage(prev => ({ ...prev, imageUrl: data.url }));
-        toast.success('Imagen subida');
-      } else {
-        toast.error('Error al subir imagen');
-      }
-    } catch {
-      toast.error('Error al subir imagen');
+    const url = await uploadFile(file, 'message');
+    if (url) {
+      setEditingMessage(prev => ({ ...prev, imageUrl: url }));
+      toast.success('Imagen subida');
     }
     setUploadingMsgImage(false);
   };
