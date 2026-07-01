@@ -53,6 +53,9 @@ interface AppSettings {
   facebookUrl: string;
   instagramUrl: string;
   whatsappUrl: string;
+  youtubeUrl: string;
+  tiktokUrl: string;
+  xUrl: string;
   primaryColor: string;
   darkColor: string;
   blogUrl: string;
@@ -81,6 +84,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   const [settings, setSettings] = useState<AppSettings>({
     streamUrl: '', stationName: '', stationSlogan: '',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '',
+    youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#F4D03F', darkColor: '#17202A',
   });
   const [logs, setLogs] = useState<Log[]>([]);
@@ -1152,6 +1156,33 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     value={settings.whatsappUrl}
                     onChange={e => setSettings(prev => ({ ...prev, whatsappUrl: e.target.value }))}
                     onBlur={() => saveSetting('whatsappUrl', settings.whatsappUrl)}
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">YouTube</label>
+                  <Input
+                    value={settings.youtubeUrl}
+                    onChange={e => setSettings(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                    onBlur={() => saveSetting('youtubeUrl', settings.youtubeUrl)}
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">TikTok</label>
+                  <Input
+                    value={settings.tiktokUrl}
+                    onChange={e => setSettings(prev => ({ ...prev, tiktokUrl: e.target.value }))}
+                    onBlur={() => saveSetting('tiktokUrl', settings.tiktokUrl)}
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">X (Twitter)</label>
+                  <Input
+                    value={settings.xUrl}
+                    onChange={e => setSettings(prev => ({ ...prev, xUrl: e.target.value }))}
+                    onBlur={() => saveSetting('xUrl', settings.xUrl)}
                     className="bg-white/5 border-white/10 text-white text-xs"
                   />
                 </div>

@@ -42,11 +42,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning data-theme="dark">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#17202A" id="theme-color-meta" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -59,10 +60,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} antialiased`}
-        style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", background: '#17202A', color: '#fff', margin: 0, padding: 0, overflow: 'hidden', height: '100%', width: '100%' }}
-      >
+      <body className={`${geistSans.variable} antialiased`} style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", margin: 0, padding: 0, overflow: 'hidden', height: '100%', width: '100%' }}>
         {children}
         <Toaster />
       </body>
