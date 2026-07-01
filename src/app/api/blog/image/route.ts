@@ -6,14 +6,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing url param' }, { status: 400 });
   }
 
-  // Only allow proxying from the configured blog domain(s)
+  // Validate it's a valid URL
   try {
     const parsed = new URL(url);
-    const blogSetting = await (await import('@/lib/db')).db.settings.findUnique({ where: { key: 'blogUrl' } });
-    const allowedOrigin = blogSetting?.value || 'http://161.97.154.157:8099';
-    const allowed = new URL(allowedOrigin);
-    if (parsed.hostname !== allowed.hostname) {
-      return NextResponse.json({ error: 'Domain not allowed' }, { status: 403 });
+    // Only allow http/https protocols
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return NextResponse.json({ error: 'Invalid protocol' }, { status: 400 });
+    }
+    // Block private/internal IPs
+    const hostname = parsed.hostname;
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.') ||
+      hostname === '0.0.0.0'
+    ) {
+      return NextResponse.json({ error: 'Private URLs not allowed' }, { status: 400 });
     }
   } catch {
     return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
@@ -21,9 +31,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
       headers: {
-        'User-Agent': 'VocesCampesinas/1.0',
+        'User-Agent': 'Mozilla/5.0 (compatible; VocesCampesinas/1.0)',
       },
     });
 
@@ -42,7 +52,8 @@ export async function GET(request: NextRequest) {
         'Access-Control-Allow-Origin': '*',
       },
     });
-  } catch {
+  } catch (err) {
+    console.error('Image proxy error:', err);
     return NextResponse.json({ error: 'Failed to fetch image' }, { status: 502 });
   }
 }

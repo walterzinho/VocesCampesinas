@@ -79,3 +79,25 @@ Stage Summary:
 - Build successful with zero errors (14 routes including /api/videos)
 - Videos appear in Noticias tab above blog articles
 - Admin can manage videos from new "Videos" tab in admin panel
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix images not loading + videos not saving (including shorts)
+
+Work Log:
+- Diagnosed video save bug: /api/videos used process.env.ADMIN_PASSWORD for auth, but admin panel sends DB-stored password. Always returned 401.
+- Rewrote /api/videos/route.ts to use verifyAdmin() that reads from DB (same as settings, upload, programs routes)
+- Added youtube.com/live/ID pattern to extractYouTubeId() (already had shorts)
+- Fixed GET /api/videos: returns all videos for admin (with auth), only active for public (without auth)
+- Added admin logging for video CRUD operations
+- Diagnosed blog image proxy bug: strict domain validation blocked CDN/external image hosts used by WordPress
+- Rewrote /api/blog/image/route.ts: removed domain check, added protocol validation (http/https only) and private IP blocking
+- Increased proxy timeout from 10s to 15s, improved User-Agent header
+- Verified uploaded images (programs, messages) use /uploads/ path served from public/ — working correctly
+- Tested video API end-to-end: POST with shorts URL → ID extracted correctly, GET returns data, DELETE works
+
+Stage Summary:
+- Videos now save correctly (auth bug fixed) — shorts, watch, youtu.be, embed, live all supported
+- Blog images now load (proxy domain restriction removed)
+- Build successful, all 14 routes working
