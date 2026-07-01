@@ -97,7 +97,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     streamUrl: '', stationName: '', stationSlogan: '',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '',
     youtubeUrl: '', tiktokUrl: '', xUrl: '',
-    primaryColor: '#F4D03F', darkColor: '#17202A',
+    primaryColor: '#67b0eb', darkColor: '#121212',
   });
   const [offAirImage, setOffAirImage] = useState('');
   const [uploadingOffAir, setUploadingOffAir] = useState(false);
@@ -501,7 +501,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   // Login screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#17202A] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
           <button
             onClick={onBack}
@@ -511,8 +511,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
           </button>
 
           <div className="flex flex-col items-center mb-6">
-            <div className="w-16 h-16 rounded-full bg-[#F4D03F]/10 flex items-center justify-center mb-3">
-              <Shield className="w-8 h-8 text-[#F4D03F]" />
+            <div className="w-16 h-16 rounded-full bg-[#67b0eb]/10 flex items-center justify-center mb-3">
+              <Shield className="w-8 h-8 text-[#67b0eb]" />
             </div>
             <h2 className="text-xl font-bold text-white">Panel Admin</h2>
             <p className="text-sm text-white/40 mt-1">Voces Campesinas</p>
@@ -527,13 +527,13 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#F4D03F]/50"
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#67b0eb]/50"
               />
             </div>
             <Button
               onClick={handleLogin}
               disabled={loading || !password}
-              className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] font-semibold"
+              className="w-full bg-[#67b0eb] text-[#121212] hover:bg-[#4a90c7] font-semibold"
             >
               {loading ? 'Verificando...' : (
                 <span className="flex items-center gap-2">
@@ -551,9 +551,9 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   // Admin Dashboard
   return (
-    <div className="min-h-screen bg-[#17202A] text-white">
+    <div className="min-h-screen bg-[#121212] text-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#17202A]/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
+      <header className="sticky top-0 z-50 bg-[#121212]/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -563,8 +563,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
             >
               <ArrowLeft className="w-4 h-4 text-white/60" />
             </button>
-            <div className="w-8 h-8 rounded-lg bg-[#F4D03F] flex items-center justify-center">
-              <Radio className="w-4 h-4 text-[#17202A]" />
+            <div className="w-8 h-8 rounded-lg bg-[#67b0eb] flex items-center justify-center">
+              <Radio className="w-4 h-4 text-[#121212]" />
             </div>
             <div>
               <h1 className="text-sm font-bold">Panel de Administración</h1>
@@ -586,44 +586,44 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
         {/* Stats */}
         <div className="grid grid-cols-4 gap-3 mb-6">
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-2xl font-bold text-[#F4D03F]">{Object.keys(groupedPrograms).length}</p>
+            <p className="text-2xl font-bold text-[#67b0eb]">{Object.keys(groupedPrograms).length}</p>
             <p className="text-[10px] text-white/40">Programas</p>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-2xl font-bold text-[#F4D03F]">{messages.filter(m => m.isActive).length}</p>
+            <p className="text-2xl font-bold text-[#67b0eb]">{messages.filter(m => m.isActive).length}</p>
             <p className="text-[10px] text-white/40">Info Activos</p>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative">
-            <p className="text-2xl font-bold text-[#F4D03F]">{songRequests.length}</p>
+            <p className="text-2xl font-bold text-[#67b0eb]">{songRequests.length}</p>
             <p className="text-[10px] text-white/40">Peticiones</p>
             {unreadRequests > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center">{unreadRequests}</span>
             )}
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-2xl font-bold text-[#F4D03F]">{logs.length}</p>
+            <p className="text-2xl font-bold text-[#67b0eb]">{logs.length}</p>
             <p className="text-[10px] text-white/40">Actividad</p>
           </div>
         </div>
 
         <Tabs defaultValue="programs" className="w-full">
           <TabsList className="w-full bg-white/5 border border-white/10 rounded-xl h-auto p-1">
-            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-[#67b0eb] data-[state=active]:text-[#121212] text-white/50 text-xs py-2 rounded-lg">
               <Clock className="w-3.5 h-3.5 mr-1" /> Programación
             </TabsTrigger>
-            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#67b0eb] data-[state=active]:text-[#121212] text-white/50 text-xs py-2 rounded-lg">
               <Bell className="w-3.5 h-3.5 mr-1" /> Información
             </TabsTrigger>
-            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg relative">
+            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#67b0eb] data-[state=active]:text-[#121212] text-white/50 text-xs py-2 rounded-lg relative">
               <Send className="w-3.5 h-3.5 mr-1" /> Peticiones
               {unreadRequests > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full">{unreadRequests}</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#67b0eb] data-[state=active]:text-[#121212] text-white/50 text-xs py-2 rounded-lg">
               <Settings className="w-3.5 h-3.5 mr-1" /> Config
             </TabsTrigger>
-            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-[#67b0eb] data-[state=active]:text-[#121212] text-white/50 text-xs py-2 rounded-lg">
               <Play className="w-3.5 h-3.5 mr-1" /> Videos
             </TabsTrigger>
           </TabsList>
@@ -637,7 +637,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   <Button
                     size="sm"
                     onClick={openNewProgram}
-                    className="bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] text-xs h-8"
+                    className="bg-[#67b0eb] text-[#121212] hover:bg-[#4a90c7] text-xs h-8"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
                   </Button>
@@ -679,7 +679,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           onClick={toggleAllDays}
                           className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
                             isQuickActive([0, 1, 2, 3, 4, 5, 6])
-                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+                              ? 'bg-[#67b0eb] border-[#67b0eb] text-[#121212]'
                               : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
                           }`}
                         >
@@ -690,7 +690,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           onClick={setWeekdays}
                           className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
                             isQuickActive([1, 2, 3, 4, 5])
-                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+                              ? 'bg-[#67b0eb] border-[#67b0eb] text-[#121212]'
                               : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
                           }`}
                         >
@@ -701,7 +701,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           onClick={setWeekend}
                           className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
                             isQuickActive([0, 6])
-                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+                              ? 'bg-[#67b0eb] border-[#67b0eb] text-[#121212]'
                               : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
                           }`}
                         >
@@ -718,7 +718,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                             onClick={() => toggleDay(idx)}
                             className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-all border ${
                               selectedDays.includes(idx)
-                                ? 'bg-[#F4D03F]/15 border-[#F4D03F]/40 text-[#F4D03F]'
+                                ? 'bg-[#67b0eb]/15 border-[#67b0eb]/40 text-[#67b0eb]'
                                 : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'
                             }`}
                           >
@@ -760,7 +760,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           />
                         </label>
                         {uploadingImage && (
-                          <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+                          <span className="text-[10px] text-[#67b0eb] animate-pulse">Subiendo...</span>
                         )}
                         {editingProgram.imageUrl && (
                           <button
@@ -805,7 +805,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       />
                       <span className="text-xs text-white/60">Programa activo</span>
                     </div>
-                    <Button onClick={saveProgram} className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D]">
+                    <Button onClick={saveProgram} className="w-full bg-[#67b0eb] text-[#121212] hover:bg-[#4a90c7]">
                       <Save className="w-4 h-4 mr-1" /> Guardar
                     </Button>
                   </div>
@@ -833,7 +833,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                             <h4 className="text-sm font-semibold text-white truncate">{name}</h4>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                               dayCount === 7
-                                ? 'bg-[#F4D03F]/20 text-[#F4D03F]'
+                                ? 'bg-[#67b0eb]/20 text-[#67b0eb]'
                                 : 'bg-white/10 text-white/40'
                             }`}>
                               {dayCount === 7 ? 'Todos los días' : dayLabels.join(' · ')}
@@ -887,7 +887,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   <Button
                     size="sm"
                     onClick={() => setEditingMessage({ type: 'info', priority: 0, isActive: true })}
-                    className="bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] text-xs h-8"
+                    className="bg-[#67b0eb] text-[#121212] hover:bg-[#4a90c7] text-xs h-8"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
                   </Button>
@@ -953,7 +953,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           />
                         </label>
                         {uploadingMsgImage && (
-                          <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+                          <span className="text-[10px] text-[#67b0eb] animate-pulse">Subiendo...</span>
                         )}
                         {editingMessage.imageUrl && (
                           <button
@@ -978,7 +978,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       />
                       <span className="text-xs text-white/60">Activo</span>
                     </div>
-                    <Button onClick={saveMessage} className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D]">
+                    <Button onClick={saveMessage} className="w-full bg-[#67b0eb] text-[#121212] hover:bg-[#4a90c7]">
                       <Save className="w-4 h-4 mr-1" /> Guardar
                     </Button>
                   </div>
@@ -1009,7 +1009,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                             msg.type === 'info' ? 'bg-sky-500/10 text-sky-400' :
                             msg.type === 'alert' ? 'bg-amber-500/10 text-amber-400' :
-                            'bg-[#F4D03F]/10 text-[#F4D03F]'
+                            'bg-[#67b0eb]/10 text-[#67b0eb]'
                           }`}>
                             {msg.type === 'info' ? 'Info' : msg.type === 'alert' ? 'Alerta' : 'Promo'}
                           </span>
@@ -1068,7 +1068,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       await markRequestRead(r.id, true);
                     }
                   }}
-                  className="text-xs text-[#F4D03F] hover:bg-[#F4D03F]/10"
+                  className="text-xs text-[#67b0eb] hover:bg-[#67b0eb]/10"
                 >
                   <Check className="w-3 h-3 mr-1" /> Marcar todo leído
                 </Button>
@@ -1087,10 +1087,10 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   const typeIcon = req.type === 'greeting' ? Heart : req.type === 'message' ? MessageSquare : Music;
                   const TypeIcon = typeIcon;
                   const typeLabel = req.type === 'greeting' ? 'Saludo' : req.type === 'message' ? 'Mensaje' : 'Petición';
-                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-[#F4D03F] bg-[#F4D03F]/10';
+                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-[#67b0eb] bg-[#67b0eb]/10';
 
                   return (
-                    <div key={req.id} className={`p-3 rounded-xl border transition-all ${!req.isRead ? 'bg-white/5 border-[#F4D03F]/20' : 'bg-white/[0.02] border-white/5'}`}>
+                    <div key={req.id} className={`p-3 rounded-xl border transition-all ${!req.isRead ? 'bg-white/5 border-[#67b0eb]/20' : 'bg-white/[0.02] border-white/5'}`}>
                       <div className="flex items-start gap-2">
                         <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${typeColor}`}>
                           <TypeIcon className="w-3.5 h-3.5" />
@@ -1187,7 +1187,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       />
                     </label>
                     {uploadingOffAir && (
-                      <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+                      <span className="text-[10px] text-[#67b0eb] animate-pulse">Subiendo...</span>
                     )}
                     {offAirImage && (
                       <button
@@ -1328,7 +1328,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       <span className="text-white/20 font-mono shrink-0">
                         {new Date(log.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className="text-[#F4D03F]/60 font-mono shrink-0">{log.action}</span>
+                      <span className="text-[#67b0eb]/60 font-mono shrink-0">{log.action}</span>
                       {log.detail && <span className="text-white/30 truncate">{log.detail}</span>}
                     </div>
                   ))}
@@ -1413,7 +1413,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           }
                         } catch { toast.error('Error de conexión'); }
                       }}
-                      className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] text-xs font-semibold h-9"
+                      className="w-full bg-[#67b0eb] text-[#121212] hover:bg-[#4a90c7] text-xs font-semibold h-9"
                     >
                       <Save className="w-3.5 h-3.5 mr-1" />
                       {editingVideo.id ? 'Actualizar' : 'Guardar'}

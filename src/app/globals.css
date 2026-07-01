@@ -54,6 +54,8 @@
   --color-app-bdr-l: var(--app-border-light);
   --color-app-accent: var(--accent-gold);
   --color-app-accent-dk: var(--accent-gold-dark);
+  --color-app-warm: var(--accent-warm);
+  --color-app-warm-dk: var(--accent-warm-dark);
 }
 
 /* ===== THEME VARIABLES ===== */
@@ -61,37 +63,39 @@
 /* Dark theme (default) */
 :root {
   --radius: 0.625rem;
-  --accent-gold: #F4D03F;
-  --accent-gold-dark: #D4AC0D;
-  --app-bg: #17202A;
+  --accent-gold: #67b0eb;
+  --accent-gold-dark: #4a90c7;
+  --accent-warm: #eda945;
+  --accent-warm-dark: #d4952e;
+  --app-bg: #121212;
   --app-text: #FFFFFF;
   --app-text-secondary: rgba(255,255,255,0.6);
   --app-text-muted: rgba(255,255,255,0.4);
   --app-text-dim: rgba(255,255,255,0.2);
-  --app-surface: rgba(255,255,255,0.05);
-  --app-surface-hover: rgba(255,255,255,0.08);
+  --app-surface: #1e1e1e;
+  --app-surface-hover: #2a2a2a;
   --app-border: rgba(255,255,255,0.1);
   --app-border-light: rgba(255,255,255,0.05);
 
   /* shadcn defaults (dark) */
-  --background: oklch(0.145 0 0);
+  --background: #121212;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: #1e1e1e;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: #1e1e1e;
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary: #67b0eb;
+  --primary-foreground: #121212;
+  --secondary: #2a2a2a;
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: #2a2a2a;
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: #2a2a2a;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: rgba(255,255,255,0.1);
+  --input: rgba(255,255,255,0.15);
+  --ring: #67b0eb;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -107,39 +111,41 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* Light theme - E-ink style (warm parchment, not pure white) */
+/* Light theme - Clean modern (white/blue) */
 [data-theme="light"] {
-  --app-bg: #EDE9E0;
-  --app-text: #1A1815;
-  --app-text-secondary: #5A5650;
-  --app-text-muted: #7A766E;
-  --app-text-dim: #B0ACA4;
-  --app-surface: rgba(0,0,0,0.05);
-  --app-surface-hover: rgba(0,0,0,0.09);
-  --app-border: rgba(0,0,0,0.13);
+  --accent-gold: #67b0eb;
+  --accent-gold-dark: #4a90c7;
+  --accent-warm: #eda945;
+  --accent-warm-dark: #d4952e;
+  --app-bg: #FFFFFF;
+  --app-text: #1e1e1e;
+  --app-text-secondary: #666666;
+  --app-text-muted: #999999;
+  --app-text-dim: #cccccc;
+  --app-surface: #F5F5F5;
+  --app-surface-hover: #EBEBEB;
+  --app-border: rgba(0,0,0,0.12);
   --app-border-light: rgba(0,0,0,0.08);
-  --accent-gold: #B8960A;
-  --accent-gold-dark: #8A7208;
 
-  /* shadcn defaults (light e-ink) */
-  --background: oklch(0.93 0.005 80);
-  --foreground: oklch(0.2 0.005 60);
-  --card: oklch(0.96 0.005 80);
-  --card-foreground: oklch(0.2 0.005 60);
-  --popover: oklch(0.96 0.005 80);
-  --popover-foreground: oklch(0.2 0.005 60);
-  --primary: oklch(0.2 0.005 60);
-  --primary-foreground: oklch(0.96 0.005 80);
-  --secondary: oklch(0.90 0.005 80);
-  --secondary-foreground: oklch(0.2 0.005 60);
-  --muted: oklch(0.90 0.005 80);
-  --muted-foreground: oklch(0.5 0.005 60);
-  --accent: oklch(0.90 0.005 80);
-  --accent-foreground: oklch(0.2 0.005 60);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.82 0.005 80);
-  --input: oklch(0.82 0.005 80);
-  --ring: oklch(0.5 0.005 60);
+  /* shadcn defaults (light) */
+  --background: #FFFFFF;
+  --foreground: #1e1e1e;
+  --card: #FFFFFF;
+  --card-foreground: #1e1e1e;
+  --popover: #FFFFFF;
+  --popover-foreground: #1e1e1e;
+  --primary: #67b0eb;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5F5F5;
+  --secondary-foreground: #1e1e1e;
+  --muted: #F5F5F5;
+  --muted-foreground: #666666;
+  --accent: #F5F5F5;
+  --accent-foreground: #1e1e1e;
+  --destructive: #ef4444;
+  --border: #e0e0e0;
+  --input: #e0e0e0;
+  --ring: #67b0eb;
 }
 
 @layer base {
