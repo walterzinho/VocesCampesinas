@@ -59,6 +59,8 @@ interface AppSettings {
   primaryColor: string;
   darkColor: string;
   blogUrl: string;
+  offAirName: string;
+  offAirImageUrl: string;
 }
 
 interface Video {
@@ -97,6 +99,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#F4D03F', darkColor: '#17202A',
   });
+  const [offAirImage, setOffAirImage] = useState('');
+  const [uploadingOffAir, setUploadingOffAir] = useState(false);
   const [logs, setLogs] = useState<Log[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
 
@@ -154,6 +158,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       if (setRes.ok) {
         const setData = await setRes.json();
         setSettings(prev => ({ ...prev, ...setData }));
+        if (setData.offAirImageUrl) setOffAirImage(setData.offAirImageUrl);
       }
       if (logRes.ok) setLogs(await logRes.json());
       if (reqRes.ok) setSongRequests(await reqRes.json());
@@ -244,6 +249,30 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.success('Imagen subida');
     }
     setUploadingMsgImage(false);
+  };
+
+  const handleOffAirImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingOffAir(true);
+    const url = await uploadFile(file, 'offair');
+    if (url) {
+      setOffAirImage(url);
+      setSettings(prev => ({ ...prev, offAirImageUrl: url }));
+      await saveSettingDirect('offAirImageUrl', url);
+      toast.success('Imagen de fuera de aire actualizada');
+    }
+    setUploadingOffAir(false);
+  };
+
+  const saveSettingDirect = async (key: string, value: string) => {
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+        body: JSON.stringify({ key, value }),
+      });
+    } catch { /* */ }
   };
 
   // Program CRUD
@@ -1128,6 +1157,59 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     placeholder="http://161.97.154.157:8099"
                     className="bg-white/5 border-white/10 text-white text-xs"
                   />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Nombre fuera de aire</label>
+                  <Input
+                    value={settings.offAirName || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, offAirName: e.target.value }))}
+                    onBlur={() => saveSetting('offAirName', settings.offAirName || 'Música de la Tierrita')}
+                    placeholder="Música de la Tierrita"
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                  <p className="text-[9px] text-white/25 mt-0.5">Se muestra cuando no hay programa al aire</p>
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo (fuera de aire)</label>
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                      <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                      <span className="text-xs text-white/50 truncate">
+                        {offAirImage
+                          ? offAirImage.replace(/^\/api\/uploads\//, '').replace('/uploads/', '')
+                          : 'Seleccionar imagen...'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleOffAirImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {uploadingOffAir && (
+                      <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+                    )}
+                    {offAirImage && (
+                      <button
+                        onClick={async () => {
+                          setOffAirImage('');
+                          setSettings(prev => ({ ...prev, offAirImageUrl: '' }));
+                          await saveSettingDirect('offAirImageUrl', '');
+                          toast.success('Imagen removida');
+                        }}
+                        className="text-white/30 hover:text-red-400 transition-colors p-1"
+                        title="Quitar imagen"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {offAirImage && (
+                    <div className="mt-2 w-20 h-14 rounded-lg overflow-hidden border border-white/10">
+                      <img src={offAirImage.startsWith('/uploads/') ? `/api/uploads${offAirImage.slice('/uploads'.length)}` : offAirImage} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <p className="text-[9px] text-white/25 mt-0.5">Fondo que se muestra cuando no hay programa en vivo</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

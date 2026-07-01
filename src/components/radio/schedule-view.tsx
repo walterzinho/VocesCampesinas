@@ -21,6 +21,7 @@ export default function ScheduleView() {
   const [allPrograms, setAllPrograms] = useState<Program[]>([]);
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [offAirName, setOffAirName] = useState('Música de la Tierrita');
 
   const now = new Date();
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -29,7 +30,17 @@ export default function ScheduleView() {
   useEffect(() => {
     let cancelled = false;
     async function fetchAll() {
-      try { const res = await fetch('/api/programs/all'); if (res.ok && !cancelled) setAllPrograms(await res.json()); } catch { /* */ }
+      try {
+        const [progRes, setRes] = await Promise.all([
+          fetch('/api/programs/all'),
+          fetch('/api/settings'),
+        ]);
+        if (progRes.ok && !cancelled) setAllPrograms(await progRes.json());
+        if (setRes.ok && !cancelled) {
+          const setData = await setRes.json();
+          if (setData.offAirName) setOffAirName(setData.offAirName);
+        }
+      } catch { /* */ }
       if (!cancelled) setLoading(false);
     }
     fetchAll();
@@ -96,7 +107,7 @@ export default function ScheduleView() {
                 <Music className="w-7 h-7 text-app-accent/70" />
               </motion.div>
             </div>
-            <h4 className="text-base font-bold text-app-accent mb-1">Música de la Tierrita</h4>
+            <h4 className="text-base font-bold text-app-accent mb-1">{offAirName}</h4>
             <p className="text-[11px] text-app-t3 max-w-[220px] leading-relaxed">Aún no hay programación configurada para esta semana</p>
           </div>
         </motion.div>
@@ -173,11 +184,11 @@ export default function ScheduleView() {
                           );
                         })}
 
-                        {/* "Música de la Tierrita" footer for today if no live program */}
+                        {/* Off-air footer */}
                         {isToday && !hasLiveProgram && (
                           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-app-accent/5 border border-app-accent/10">
                             <Music className="w-3.5 h-3.5 text-app-accent/50 shrink-0" />
-                            <span className="text-[10px] text-app-accent/60">Ahora: <strong className="text-app-accent/80">Música de la Tierrita</strong></span>
+                            <span className="text-[10px] text-app-accent/60">Ahora: <strong className="text-app-accent/80">{offAirName}</strong></span>
                           </motion.div>
                         )}
                       </div>

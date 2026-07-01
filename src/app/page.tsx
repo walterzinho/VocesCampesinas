@@ -24,6 +24,8 @@ interface StationSettings {
   primaryColor: string;
   darkColor: string;
   blogUrl: string;
+  offAirName: string;
+  offAirImageUrl: string;
 }
 
 interface Program {
@@ -48,6 +50,7 @@ export default function HomePage() {
     stationSlogan: 'El Campo Nos Une',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '', youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#F4D03F', darkColor: '#17202A', blogUrl: '',
+    offAirName: 'Música de la Tierrita', offAirImageUrl: '',
   });
   const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
   const [nextProgram, setNextProgram] = useState<Program | null>(null);
@@ -171,9 +174,9 @@ export default function HomePage() {
   };
 
   const backgroundImageUrl = useMemo(() => {
-    const raw = currentProgram?.imageUrl || '/api/uploads/musicatierrita.png';
+    const raw = currentProgram?.imageUrl || settings.offAirImageUrl || '/api/uploads/musicatierrita.png';
     return raw.startsWith('/uploads/') ? `/api/uploads${raw.slice('/uploads'.length)}` : raw;
-  }, [currentProgram]);
+  }, [currentProgram, settings.offAirImageUrl]);
 
   // Admin view — full screen but with player at top
   if (view === 'admin') {
@@ -301,7 +304,7 @@ export default function HomePage() {
                   <Music className="w-3 h-3 text-app-accent/70" />
                   <span className="text-[9px] font-bold text-app-accent/70 uppercase tracking-wider">Ahora suena</span>
                 </div>
-                <h3 className="text-lg font-bold text-app-accent leading-tight">Música de la Tierrita</h3>
+                <h3 className="text-lg font-bold text-app-accent leading-tight">{settings.offAirName || 'Música de la Tierrita'}</h3>
                 <p className="text-[11px] text-white/40">La mejor selección musical campesina</p>
               </>
             )}
@@ -337,7 +340,7 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div>
-                    <h4 className="text-sm font-semibold text-app-t3">Música de la Tierrita</h4>
+                    <h4 className="text-sm font-semibold text-app-t3">{settings.offAirName || 'Música de la Tierrita'}</h4>
                     <p className="text-[11px] text-app-tdim mt-0.5">Programación del día finalizada</p>
                   </div>
                 )}

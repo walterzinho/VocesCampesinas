@@ -157,3 +157,27 @@ Stage Summary:
 - Dark theme unchanged — still uses bright gold (#F4D03F)
 - Programming tab shows entire week at a glance, collapsible by day
 - Build successful, 15 routes, zero errors
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Add configurable off-air name and background image in admin settings
+
+Work Log:
+- Added offAirName and offAirImageUrl to StationSettings (page.tsx) and AppSettings (admin-panel.tsx)
+- Created handleOffAirImageUpload + saveSettingDirect helper in admin-panel.tsx
+- Added two new fields in admin Settings tab:
+  - "Nombre fuera de aire" — text input, saves to offAirName setting
+  - "Imagen de fondo (fuera de aire)" — file upload with preview and remove button, saves to offAirImageUrl setting
+- Updated page.tsx: background image falls back to settings.offAirImageUrl || default musicatierrita.png
+- Updated page.tsx: all "Música de la Tierrita" text replaced with settings.offAirName
+- Updated schedule-view.tsx: loads offAirName from /api/settings, replaces hardcoded name
+- All changes use existing settings API (key-value store) — no schema migration needed
+- Settings are public (no auth needed) so schedule-view can read them
+
+Stage Summary:
+- Admin can now change the off-air name at any time from Config tab
+- Admin can upload a custom background image for off-air periods
+- Both settings persist in DB and take effect immediately across all views
+- Default fallback: "Música de la Tierrita" + musicatierrita.png
+- Build successful, 15 routes, zero errors
