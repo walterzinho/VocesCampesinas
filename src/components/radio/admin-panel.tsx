@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon } from 'lucide-react';
+import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,6 +61,16 @@ interface AppSettings {
   blogUrl: string;
 }
 
+interface Video {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
 interface Log {
   id: string;
   action: string;
@@ -88,6 +98,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     primaryColor: '#F4D03F', darkColor: '#17202A',
   });
   const [logs, setLogs] = useState<Log[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
 
   // Dialog states
   const [programDialog, setProgramDialog] = useState(false);
@@ -97,6 +108,9 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   const [isEditingExisting, setIsEditingExisting] = useState(false);
   const [editingMessage, setEditingMessage] = useState<Partial<Message>>({});
   const [expandedLogs, setExpandedLogs] = useState(false);
+  const [videoDialog, setVideoDialog] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<Partial<Video>>({});
+  const [videoForm, setVideoForm] = useState({ title: '', youtubeUrl: '', description: '' });
 
   const authHeader = useCallback(() => ({
     headers: { 'Authorization': `Bearer ${password}` },
@@ -126,12 +140,13 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   const fetchAllData = useCallback(async () => {
     try {
-      const [progRes, msgRes, setRes, logRes, reqRes] = await Promise.all([
+      const [progRes, msgRes, setRes, logRes, reqRes, vidRes] = await Promise.all([
         fetch('/api/programs/all', authHeader()),
         fetch('/api/messages/all', authHeader()),
         fetch('/api/settings', authHeader()),
         fetch('/api/admin', authHeader()),
         fetch('/api/requests', authHeader()),
+        fetch('/api/videos', authHeader()),
       ]);
 
       if (progRes.ok) setPrograms(await progRes.json());
@@ -142,6 +157,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       }
       if (logRes.ok) setLogs(await logRes.json());
       if (reqRes.ok) setSongRequests(await reqRes.json());
+      if (vidRes.ok) setVideos(await vidRes.json());
     } catch { /* ignore */ }
   }, [authHeader]);
 
@@ -573,6 +589,9 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
               <Settings className="w-3.5 h-3.5 mr-1" /> Config
+            </TabsTrigger>
+            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+              <Play className="w-3.5 h-3.5 mr-1" /> Videos
             </TabsTrigger>
           </TabsList>
 
@@ -1230,6 +1249,162 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          {/* VIDEOS TAB */}
+          <TabsContent value="videos" className="mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-white/70">Videos de YouTube</h3>
+              <Dialog open={videoDialog} onOpenChange={(open) => {
+                setVideoDialog(open);
+                if (!open) { setEditingVideo({}); setVideoForm({ title: '', youtubeUrl: '', description: '' }); }
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white text-xs h-7 gap-1">
+                    <Plus className="w-3 h-3" /> Agregar
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-[#1a1a2e] border-white/10 text-white max-w-md mx-4">
+                  <DialogHeader>
+                    <DialogTitle className="text-sm">{editingVideo.id ? 'Editar Video' : 'Agregar Video'}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 mt-2">
+                    <div>
+                      <label className="text-[10px] text-white/40 font-medium mb-1 block">Título del video *</label>
+                      <Input
+                        value={videoForm.title}
+                        onChange={e => setVideoForm(f => ({ ...f, title: e.target.value }))}
+                        placeholder="Título del video"
+                        className="bg-white/5 border-white/10 text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-white/40 font-medium mb-1 block">Enlace de YouTube *</label>
+                      <Input
+                        value={videoForm.youtubeUrl}
+                        onChange={e => setVideoForm(f => ({ ...f, youtubeUrl: e.target.value }))}
+                        placeholder="https://youtube.com/watch?v=... o solo el ID"
+                        className="bg-white/5 border-white/10 text-white text-xs"
+                      />
+                      <p className="text-[9px] text-white/30 mt-1">Pega el enlace completo de YouTube o solo el ID del video</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-white/40 font-medium mb-1 block">Descripción (opcional)</label>
+                      <Textarea
+                        value={videoForm.description}
+                        onChange={e => setVideoForm(f => ({ ...f, description: e.target.value }))}
+                        placeholder="Breve descripción del video"
+                        className="bg-white/5 border-white/10 text-white text-xs min-h-[60px] resize-none"
+                      />
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        if (!videoForm.title.trim() || !videoForm.youtubeUrl.trim()) {
+                          toast.error('Título y enlace son requeridos');
+                          return;
+                        }
+                        try {
+                          const isEdit = !!editingVideo.id;
+                          const res = await fetch('/api/videos', {
+                            method: isEdit ? 'PUT' : 'POST',
+                            headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+                            body: JSON.stringify({
+                              ...(isEdit ? { id: editingVideo.id } : {}),
+                              title: videoForm.title,
+                              youtubeUrl: videoForm.youtubeUrl,
+                              description: videoForm.description,
+                            }),
+                          });
+                          if (res.ok) {
+                            toast.success(isEdit ? 'Video actualizado' : 'Video agregado');
+                            setVideoDialog(false);
+                            setEditingVideo({});
+                            setVideoForm({ title: '', youtubeUrl: '', description: '' });
+                            fetchAllData();
+                          } else {
+                            const err = await res.json();
+                            toast.error(err.error || 'Error al guardar');
+                          }
+                        } catch { toast.error('Error de conexión'); }
+                      }}
+                      className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] text-xs font-semibold h-9"
+                    >
+                      <Save className="w-3.5 h-3.5 mr-1" />
+                      {editingVideo.id ? 'Actualizar' : 'Guardar'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {videos.length === 0 ? (
+              <div className="text-center py-8 text-white/30 text-xs">
+                <Play className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No hay videos agregados</p>
+                <p className="text-[10px] mt-1">Agrega videos de YouTube que se mostrarán en la sección Noticias</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {videos.map(video => (
+                  <div key={video.id} className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-start gap-3">
+                      {/* Thumbnail */}
+                      <div className="shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-white/5 relative">
+                        <img
+                          src={`https://img.youtube.com/vi/${video.youtubeUrl}/mqdefault.jpg`}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Play className="w-4 h-4 text-white/70" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-semibold text-white truncate">{video.title}</h4>
+                        <p className="text-[10px] text-white/30 mt-0.5 truncate">{video.description || 'Sin descripción'}</p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Switch
+                            checked={video.isActive}
+                            onCheckedChange={async (checked) => {
+                              await fetch('/api/videos', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader().headers }, body: JSON.stringify({ id: video.id, isActive: checked }) });
+                              setVideos(vs => vs.map(v => v.id === video.id ? { ...v, isActive: checked } : v));
+                            }}
+                            className="scale-75"
+                          />
+                          <span className="text-[9px] text-white/40">{video.isActive ? 'Activo' : 'Inactivo'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => {
+                            setEditingVideo(video);
+                            setVideoForm({ title: video.title, youtubeUrl: video.youtubeUrl, description: video.description || '' });
+                            setVideoDialog(true);
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white"
+                          title="Editar"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('¿Eliminar este video?')) return;
+                            await fetch(`/api/videos?id=${video.id}`, { method: 'DELETE', ...authHeader() });
+                            setVideos(vs => vs.filter(v => v.id !== video.id));
+                            toast.success('Video eliminado');
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-red-500/20 transition-colors text-white/40 hover:text-red-400"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

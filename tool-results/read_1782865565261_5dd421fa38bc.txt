@@ -1,0 +1,1239 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon } from 'lucide-react';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Textarea } from '@/components/ui/textarea';
+     8→import { Switch } from '@/components/ui/switch';
+     9→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    10→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+    11→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    12→import { toast } from 'sonner';
+    13→
+    14→const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    15→const DAY_FULL_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    16→
+    17→interface Program {
+    18→  id: string;
+    19→  name: string;
+    20→  host: string | null;
+    21→  description: string | null;
+    22→  dayOfWeek: number;
+    23→  startTime: string;
+    24→  endTime: string;
+    25→  isActive: boolean;
+    26→  genre: string | null;
+    27→  sortOrder: number;
+    28→  imageUrl: string | null;
+    29→}
+    30→
+    31→interface Message {
+    32→  id: string;
+    33→  content: string;
+    34→  type: string;
+    35→  imageUrl: string | null;
+    36→  isActive: boolean;
+    37→  priority: number;
+    38→}
+    39→
+    40→interface SongRequest {
+    41→  id: string;
+    42→  listenerName: string | null;
+    43→  message: string;
+    44→  type: string;
+    45→  isRead: boolean;
+    46→  createdAt: string;
+    47→}
+    48→
+    49→interface AppSettings {
+    50→  streamUrl: string;
+    51→  stationName: string;
+    52→  stationSlogan: string;
+    53→  facebookUrl: string;
+    54→  instagramUrl: string;
+    55→  whatsappUrl: string;
+    56→  youtubeUrl: string;
+    57→  tiktokUrl: string;
+    58→  xUrl: string;
+    59→  primaryColor: string;
+    60→  darkColor: string;
+    61→  blogUrl: string;
+    62→}
+    63→
+    64→interface Log {
+    65→  id: string;
+    66→  action: string;
+    67→  detail: string | null;
+    68→  createdAt: string;
+    69→}
+    70→
+    71→interface AdminPanelProps {
+    72→  onBack: () => void;
+    73→}
+    74→
+    75→export default function AdminPanel({ onBack }: AdminPanelProps) {
+    76→  const [isAuthenticated, setIsAuthenticated] = useState(false);
+    77→  const [password, setPassword] = useState('');
+    78→  const [loading, setLoading] = useState(false);
+    79→
+    80→  // Data states
+    81→  const [programs, setPrograms] = useState<Program[]>([]);
+    82→  const [messages, setMessages] = useState<Message[]>([]);
+    83→  const [songRequests, setSongRequests] = useState<SongRequest[]>([]);
+    84→  const [settings, setSettings] = useState<AppSettings>({
+    85→    streamUrl: '', stationName: '', stationSlogan: '',
+    86→    facebookUrl: '', instagramUrl: '', whatsappUrl: '',
+    87→    youtubeUrl: '', tiktokUrl: '', xUrl: '',
+    88→    primaryColor: '#F4D03F', darkColor: '#17202A',
+    89→  });
+    90→  const [logs, setLogs] = useState<Log[]>([]);
+    91→
+    92→  // Dialog states
+    93→  const [programDialog, setProgramDialog] = useState(false);
+    94→  const [messageDialog, setMessageDialog] = useState(false);
+    95→  const [editingProgram, setEditingProgram] = useState<Partial<Program>>({});
+    96→  const [selectedDays, setSelectedDays] = useState<number[]>([new Date().getDay()]);
+    97→  const [isEditingExisting, setIsEditingExisting] = useState(false);
+    98→  const [editingMessage, setEditingMessage] = useState<Partial<Message>>({});
+    99→  const [expandedLogs, setExpandedLogs] = useState(false);
+   100→
+   101→  const authHeader = useCallback(() => ({
+   102→    headers: { 'Authorization': `Bearer ${password}` },
+   103→  }), [password]);
+   104→
+   105→  // Login
+   106→  const handleLogin = async () => {
+   107→    setLoading(true);
+   108→    try {
+   109→      const res = await fetch('/api/admin', {
+   110→        method: 'POST',
+   111→        headers: { 'Content-Type': 'application/json' },
+   112→        body: JSON.stringify({ password }),
+   113→      });
+   114→      if (res.ok) {
+   115→        setIsAuthenticated(true);
+   116→        toast.success('Sesión iniciada');
+   117→        fetchAllData();
+   118→      } else {
+   119→        toast.error('Contraseña incorrecta');
+   120→      }
+   121→    } catch {
+   122→      toast.error('Error de conexión');
+   123→    }
+   124→    setLoading(false);
+   125→  };
+   126→
+   127→  const fetchAllData = useCallback(async () => {
+   128→    try {
+   129→      const [progRes, msgRes, setRes, logRes, reqRes] = await Promise.all([
+   130→        fetch('/api/programs/all', authHeader()),
+   131→        fetch('/api/messages/all', authHeader()),
+   132→        fetch('/api/settings', authHeader()),
+   133→        fetch('/api/admin', authHeader()),
+   134→        fetch('/api/requests', authHeader()),
+   135→      ]);
+   136→
+   137→      if (progRes.ok) setPrograms(await progRes.json());
+   138→      if (msgRes.ok) setMessages(await msgRes.json());
+   139→      if (setRes.ok) {
+   140→        const setData = await setRes.json();
+   141→        setSettings(prev => ({ ...prev, ...setData }));
+   142→      }
+   143→      if (logRes.ok) setLogs(await logRes.json());
+   144→      if (reqRes.ok) setSongRequests(await reqRes.json());
+   145→    } catch { /* ignore */ }
+   146→  }, [authHeader]);
+   147→
+   148→  useEffect(() => {
+   149→    if (isAuthenticated) {
+   150→      fetchAllData();
+   151→      const interval = setInterval(fetchAllData, 15000);
+   152→      return () => clearInterval(interval);
+   153→    }
+   154→  }, [isAuthenticated, fetchAllData]);
+   155→
+   156→  // Quick day selection helpers
+   157→  const setWeekdays = () => setSelectedDays([1, 2, 3, 4, 5]);
+   158→  const setWeekend = () => setSelectedDays([0, 6]);
+   159→  const toggleAllDays = () => {
+   160→    if (selectedDays.length === 7) setSelectedDays([]);
+   161→    else setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+   162→  };
+   163→  const toggleDay = (day: number) => {
+   164→    setSelectedDays(prev =>
+   165→      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+   166→    );
+   167→  };
+   168→
+   169→  const isQuickActive = (days: number[]) => {
+   170→    if (selectedDays.length !== days.length) return false;
+   171→    return days.every(d => selectedDays.includes(d));
+   172→  };
+   173→
+   174→  // Image upload handler
+   175→  const [uploadingImage, setUploadingImage] = useState(false);
+   176→  const [uploadingMsgImage, setUploadingMsgImage] = useState(false);
+   177→  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   178→    const file = e.target.files?.[0];
+   179→    if (!file) return;
+   180→    setUploadingImage(true);
+   181→    try {
+   182→      const formData = new FormData();
+   183→      formData.append('file', file);
+   184→      formData.append('field', 'program');
+   185→      const res = await fetch('/api/upload', {
+   186→        method: 'POST',
+   187→        headers: authHeader().headers,
+   188→        body: formData,
+   189→      });
+   190→      if (res.ok) {
+   191→        const data = await res.json();
+   192→        setEditingProgram(prev => ({ ...prev, imageUrl: data.url }));
+   193→        toast.success('Imagen subida');
+   194→      } else {
+   195→        toast.error('Error al subir imagen');
+   196→      }
+   197→    } catch {
+   198→      toast.error('Error al subir imagen');
+   199→    }
+   200→    setUploadingImage(false);
+   201→  };
+   202→
+   203→  const handleMessageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   204→    const file = e.target.files?.[0];
+   205→    if (!file) return;
+   206→    setUploadingMsgImage(true);
+   207→    try {
+   208→      const formData = new FormData();
+   209→      formData.append('file', file);
+   210→      formData.append('field', 'message');
+   211→      const res = await fetch('/api/upload', {
+   212→        method: 'POST',
+   213→        headers: authHeader().headers,
+   214→        body: formData,
+   215→      });
+   216→      if (res.ok) {
+   217→        const data = await res.json();
+   218→        setEditingMessage(prev => ({ ...prev, imageUrl: data.url }));
+   219→        toast.success('Imagen subida');
+   220→      } else {
+   221→        toast.error('Error al subir imagen');
+   222→      }
+   223→    } catch {
+   224→      toast.error('Error al subir imagen');
+   225→    }
+   226→    setUploadingMsgImage(false);
+   227→  };
+   228→
+   229→  // Program CRUD
+   230→  const saveProgram = async () => {
+   231→    if (!editingProgram.name || !editingProgram.startTime || !editingProgram.endTime) {
+   232→      toast.error('Completa los campos obligatorios');
+   233→      return;
+   234→    }
+   235→    if (selectedDays.length === 0) {
+   236→      toast.error('Selecciona al menos un día');
+   237→      return;
+   238→    }
+   239→
+   240→    const basePayload = {
+   241→      name: editingProgram.name,
+   242→      host: editingProgram.host || '',
+   243→      description: editingProgram.description || '',
+   244→      startTime: editingProgram.startTime,
+   245→      endTime: editingProgram.endTime,
+   246→      genre: editingProgram.genre || '',
+   247→      isActive: editingProgram.isActive ?? true,
+   248→      sortOrder: editingProgram.sortOrder ?? 0,
+   249→      imageUrl: editingProgram.imageUrl || '',
+   250→    };
+   251→
+   252→    try {
+   253→      let res;
+   254→      if (isEditingExisting && editingProgram.id && selectedDays.length === 1) {
+   255→        res = await fetch('/api/programs', {
+   256→          method: 'PUT',
+   257→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   258→          body: JSON.stringify({ id: editingProgram.id, ...basePayload, dayOfWeek: selectedDays[0] }),
+   259→        });
+   260→      } else if (isEditingExisting) {
+   261→        const oldName = editingProgram.name;
+   262→        res = await fetch('/api/programs', {
+   263→          method: 'PUT',
+   264→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   265→          body: JSON.stringify({
+   266→            batchUpdateName: oldName,
+   267→            days: selectedDays,
+   268→            ...basePayload,
+   269→          }),
+   270→        });
+   271→      } else {
+   272→        res = await fetch('/api/programs', {
+   273→          method: 'POST',
+   274→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   275→          body: JSON.stringify({ ...basePayload, days: selectedDays }),
+   276→        });
+   277→      }
+   278→
+   279→      if (res.ok) {
+   280→        const dayLabel = selectedDays.length === 7 ? 'todos los días' : `${selectedDays.length} día(s)`;
+   281→        toast.success(`${isEditingExisting ? 'Programa actualizado' : 'Programa creado'} para ${dayLabel}`);
+   282→        setProgramDialog(false);
+   283→        setEditingProgram({});
+   284→        setSelectedDays([new Date().getDay()]);
+   285→        setIsEditingExisting(false);
+   286→        fetchAllData();
+   287→      }
+   288→    } catch {
+   289→      toast.error('Error al guardar');
+   290→    }
+   291→  };
+   292→
+   293→  const deleteProgram = async (id: string, name?: string) => {
+   294→    try {
+   295→      const params = name ? `?name=${encodeURIComponent(name)}` : `?id=${id}`;
+   296→      const res = await fetch(`/api/programs${params}`, {
+   297→        method: 'DELETE',
+   298→        ...authHeader(),
+   299→      });
+   300→      if (res.ok) {
+   301→        toast.success(name ? `"${name}" eliminado de todos los días` : 'Programa eliminado');
+   302→        fetchAllData();
+   303→      }
+   304→    } catch {
+   305→      toast.error('Error al eliminar');
+   306→    }
+   307→  };
+   308→
+   309→  // Group programs by name for display
+   310→  const groupedPrograms = programs.reduce((acc, prog) => {
+   311→    const key = prog.name;
+   312→    if (!acc[key]) acc[key] = [];
+   313→    acc[key].push(prog);
+   314→    return acc;
+   315→  }, {} as Record<string, Program[]>);
+   316→
+   317→  const openEditProgram = (prog: Program) => {
+   318→    setIsEditingExisting(true);
+   319→    setEditingProgram(prog);
+   320→    const sameNamePrograms = programs.filter(p => p.name === prog.name);
+   321→    setSelectedDays(sameNamePrograms.map(p => p.dayOfWeek));
+   322→    setProgramDialog(true);
+   323→  };
+   324→
+   325→  const openNewProgram = () => {
+   326→    setIsEditingExisting(false);
+   327→    setEditingProgram({ isActive: true, sortOrder: 0 });
+   328→    setSelectedDays([new Date().getDay()]);
+   329→    setProgramDialog(true);
+   330→  };
+   331→
+   332→  const toggleProgramActive = async (prog: Program) => {
+   333→    try {
+   334→      const sameName = programs.filter(p => p.name === prog.name);
+   335→      const newActive = !prog.isActive;
+   336→      for (const p of sameName) {
+   337→        await fetch('/api/programs', {
+   338→          method: 'PUT',
+   339→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   340→          body: JSON.stringify({ id: p.id, isActive: newActive }),
+   341→        });
+   342→      }
+   343→      fetchAllData();
+   344→    } catch { /* ignore */ }
+   345→  };
+   346→
+   347→  // Message CRUD
+   348→  const saveMessage = async () => {
+   349→    if (!editingMessage.content) {
+   350→      toast.error('Escribe un mensaje');
+   351→      return;
+   352→    }
+   353→
+   354→    const payload = {
+   355→      content: editingMessage.content,
+   356→      type: editingMessage.type || 'info',
+   357→      priority: editingMessage.priority ?? 0,
+   358→      isActive: editingMessage.isActive ?? true,
+   359→      imageUrl: editingMessage.imageUrl || null,
+   360→    };
+   361→
+   362→    try {
+   363→      let res;
+   364→      if (editingMessage.id) {
+   365→        res = await fetch('/api/messages', {
+   366→          method: 'PUT',
+   367→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   368→          body: JSON.stringify({ id: editingMessage.id, ...payload }),
+   369→        });
+   370→      } else {
+   371→        res = await fetch('/api/messages', {
+   372→          method: 'POST',
+   373→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   374→          body: JSON.stringify(payload),
+   375→        });
+   376→      }
+   377→
+   378→      if (res.ok) {
+   379→        toast.success(editingMessage.id ? 'Información actualizada' : 'Información creada');
+   380→        setMessageDialog(false);
+   381→        setEditingMessage({});
+   382→        fetchAllData();
+   383→      }
+   384→    } catch {
+   385→      toast.error('Error al guardar');
+   386→    }
+   387→  };
+   388→
+   389→  const deleteMessage = async (id: string) => {
+   390→    try {
+   391→      const res = await fetch(`/api/messages?id=${id}`, {
+   392→        method: 'DELETE',
+   393→        ...authHeader(),
+   394→      });
+   395→      if (res.ok) {
+   396→        toast.success('Eliminado');
+   397→        fetchAllData();
+   398→      }
+   399→    } catch {
+   400→      toast.error('Error al eliminar');
+   401→    }
+   402→  };
+   403→
+   404→  // Mark request as read
+   405→  const markRequestRead = async (id: string, read: boolean) => {
+   406→    try {
+   407→      await fetch('/api/requests', {
+   408→        method: 'PUT',
+   409→        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   410→        body: JSON.stringify({ id, isRead: read }),
+   411→      });
+   412→      fetchAllData();
+   413→    } catch { /* ignore */ }
+   414→  };
+   415→
+   416→  // Delete request
+   417→  const deleteRequest = async (id: string) => {
+   418→    try {
+   419→      const res = await fetch(`/api/requests?id=${id}`, {
+   420→        method: 'DELETE',
+   421→        ...authHeader(),
+   422→      });
+   423→      if (res.ok) {
+   424→        toast.success('Petición eliminada');
+   425→        fetchAllData();
+   426→      }
+   427→    } catch {
+   428→      toast.error('Error al eliminar');
+   429→    }
+   430→  };
+   431→
+   432→  // Settings
+   433→  const saveSetting = async (key: string, value: string) => {
+   434→    try {
+   435→      await fetch('/api/settings', {
+   436→        method: 'PUT',
+   437→        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   438→        body: JSON.stringify({ key, value }),
+   439→      });
+   440→      setSettings(prev => ({ ...prev, [key]: value }));
+   441→      toast.success('Configuración guardada');
+   442→    } catch {
+   443→      toast.error('Error al guardar');
+   444→    }
+   445→  };
+   446→
+   447→  // Change password
+   448→  const changePassword = async (newPass: string) => {
+   449→    await saveSetting('adminPassword', newPass);
+   450→  };
+   451→
+   452→  // Login screen
+   453→  if (!isAuthenticated) {
+   454→    return (
+   455→      <div className="min-h-screen bg-[#17202A] flex items-center justify-center p-4">
+   456→        <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+   457→          <button
+   458→            onClick={onBack}
+   459→            className="absolute top-4 left-4 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+   460→          >
+   461→            <ArrowLeft className="w-4 h-4 text-white/60" />
+   462→          </button>
+   463→
+   464→          <div className="flex flex-col items-center mb-6">
+   465→            <div className="w-16 h-16 rounded-full bg-[#F4D03F]/10 flex items-center justify-center mb-3">
+   466→              <Shield className="w-8 h-8 text-[#F4D03F]" />
+   467→            </div>
+   468→            <h2 className="text-xl font-bold text-white">Panel Admin</h2>
+   469→            <p className="text-sm text-white/40 mt-1">Voces Campesinas</p>
+   470→          </div>
+   471→
+   472→          <div className="space-y-4">
+   473→            <div className="relative">
+   474→              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+   475→              <Input
+   476→                type="password"
+   477→                placeholder="Contraseña de administrador"
+   478→                value={password}
+   479→                onChange={e => setPassword(e.target.value)}
+   480→                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+   481→                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#F4D03F]/50"
+   482→              />
+   483→            </div>
+   484→            <Button
+   485→              onClick={handleLogin}
+   486→              disabled={loading || !password}
+   487→              className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] font-semibold"
+   488→            >
+   489→              {loading ? 'Verificando...' : (
+   490→                <span className="flex items-center gap-2">
+   491→                  <LogIn className="w-4 h-4" /> Ingresar
+   492→                </span>
+   493→              )}
+   494→            </Button>
+   495→          </div>
+   496→        </div>
+   497→      </div>
+   498→    );
+   499→  }
+   500→
+   501→  const unreadRequests = songRequests.filter(r => !r.isRead).length;
+   502→
+   503→  // Admin Dashboard
+   504→  return (
+   505→    <div className="min-h-screen bg-[#17202A] text-white">
+   506→      {/* Header */}
+   507→      <header className="sticky top-0 z-50 bg-[#17202A]/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
+   508→        <div className="max-w-4xl mx-auto flex items-center justify-between">
+   509→          <div className="flex items-center gap-3">
+   510→            <button
+   511→              onClick={onBack}
+   512→              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+   513→              title="Volver al reproductor"
+   514→            >
+   515→              <ArrowLeft className="w-4 h-4 text-white/60" />
+   516→            </button>
+   517→            <div className="w-8 h-8 rounded-lg bg-[#F4D03F] flex items-center justify-center">
+   518→              <Radio className="w-4 h-4 text-[#17202A]" />
+   519→            </div>
+   520→            <div>
+   521→              <h1 className="text-sm font-bold">Panel de Administración</h1>
+   522→              <p className="text-[10px] text-white/40">Voces Campesinas</p>
+   523→            </div>
+   524→          </div>
+   525→          <Button
+   526→            variant="ghost"
+   527→            size="sm"
+   528→            onClick={() => { setIsAuthenticated(false); setPassword(''); }}
+   529→            className="text-white/50 hover:text-white hover:bg-white/5"
+   530→          >
+   531→            <LogOut className="w-4 h-4 mr-1" /> Salir
+   532→          </Button>
+   533→        </div>
+   534→      </header>
+   535→
+   536→      <main className="max-w-4xl mx-auto p-4 pb-20">
+   537→        {/* Stats */}
+   538→        <div className="grid grid-cols-4 gap-3 mb-6">
+   539→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   540→            <p className="text-2xl font-bold text-[#F4D03F]">{Object.keys(groupedPrograms).length}</p>
+   541→            <p className="text-[10px] text-white/40">Programas</p>
+   542→          </div>
+   543→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   544→            <p className="text-2xl font-bold text-[#F4D03F]">{messages.filter(m => m.isActive).length}</p>
+   545→            <p className="text-[10px] text-white/40">Info Activos</p>
+   546→          </div>
+   547→          <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative">
+   548→            <p className="text-2xl font-bold text-[#F4D03F]">{songRequests.length}</p>
+   549→            <p className="text-[10px] text-white/40">Peticiones</p>
+   550→            {unreadRequests > 0 && (
+   551→              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center">{unreadRequests}</span>
+   552→            )}
+   553→          </div>
+   554→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   555→            <p className="text-2xl font-bold text-[#F4D03F]">{logs.length}</p>
+   556→            <p className="text-[10px] text-white/40">Actividad</p>
+   557→          </div>
+   558→        </div>
+   559→
+   560→        <Tabs defaultValue="programs" className="w-full">
+   561→          <TabsList className="w-full bg-white/5 border border-white/10 rounded-xl h-auto p-1">
+   562→            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   563→              <Clock className="w-3.5 h-3.5 mr-1" /> Programación
+   564→            </TabsTrigger>
+   565→            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   566→              <Bell className="w-3.5 h-3.5 mr-1" /> Información
+   567→            </TabsTrigger>
+   568→            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg relative">
+   569→              <Send className="w-3.5 h-3.5 mr-1" /> Peticiones
+   570→              {unreadRequests > 0 && (
+   571→                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full">{unreadRequests}</span>
+   572→              )}
+   573→            </TabsTrigger>
+   574→            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#F4D03F] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   575→              <Settings className="w-3.5 h-3.5 mr-1" /> Config
+   576→            </TabsTrigger>
+   577→          </TabsList>
+   578→
+   579→          {/* PROGRAMS TAB */}
+   580→          <TabsContent value="programs" className="mt-4">
+   581→            <div className="flex items-center justify-between mb-3">
+   582→              <h3 className="text-sm font-semibold text-white/70">Todos los Programas</h3>
+   583→              <Dialog open={programDialog} onOpenChange={setProgramDialog}>
+   584→                <DialogTrigger asChild>
+   585→                  <Button
+   586→                    size="sm"
+   587→                    onClick={openNewProgram}
+   588→                    className="bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] text-xs h-8"
+   589→                  >
+   590→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   591→                  </Button>
+   592→                </DialogTrigger>
+   593→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
+   594→                  <DialogHeader>
+   595→                    <DialogTitle className="text-white">
+   596→                      {isEditingExisting ? 'Editar Programa' : 'Nuevo Programa'}
+   597→                    </DialogTitle>
+   598→                  </DialogHeader>
+   599→                  <div className="space-y-3 mt-2">
+   600→                    <Input
+   601→                      placeholder="Nombre del programa *"
+   602→                      value={editingProgram.name || ''}
+   603→                      onChange={e => setEditingProgram(prev => ({ ...prev, name: e.target.value }))}
+   604→                      className="bg-white/5 border-white/10 text-white"
+   605→                    />
+   606→                    <Input
+   607→                      placeholder="Conductor"
+   608→                      value={editingProgram.host || ''}
+   609→                      onChange={e => setEditingProgram(prev => ({ ...prev, host: e.target.value }))}
+   610→                      className="bg-white/5 border-white/10 text-white"
+   611→                    />
+   612→                    <Textarea
+   613→                      placeholder="Descripción"
+   614→                      value={editingProgram.description || ''}
+   615→                      onChange={e => setEditingProgram(prev => ({ ...prev, description: e.target.value }))}
+   616→                      className="bg-white/5 border-white/10 text-white min-h-[60px]"
+   617→                    />
+   618→
+   619→                    {/* Day Selection with Quick Selects */}
+   620→                    <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+   621→                      <label className="text-xs text-white/60 font-medium mb-2 block">Días de emisión *</label>
+   622→
+   623→                      {/* Quick select buttons */}
+   624→                      <div className="flex gap-1.5 mb-3">
+   625→                        <button
+   626→                          type="button"
+   627→                          onClick={toggleAllDays}
+   628→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   629→                            isQuickActive([0, 1, 2, 3, 4, 5, 6])
+   630→                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+   631→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   632→                          }`}
+   633→                        >
+   634→                          Todos
+   635→                        </button>
+   636→                        <button
+   637→                          type="button"
+   638→                          onClick={setWeekdays}
+   639→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   640→                            isQuickActive([1, 2, 3, 4, 5])
+   641→                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+   642→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   643→                          }`}
+   644→                        >
+   645→                          Lun - Vie
+   646→                        </button>
+   647→                        <button
+   648→                          type="button"
+   649→                          onClick={setWeekend}
+   650→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   651→                            isQuickActive([0, 6])
+   652→                              ? 'bg-[#F4D03F] border-[#F4D03F] text-[#17202A]'
+   653→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   654→                          }`}
+   655→                        >
+   656→                          Fin de Semana
+   657→                        </button>
+   658→                      </div>
+   659→
+   660→                      {/* Individual day buttons */}
+   661→                      <div className="grid grid-cols-7 gap-1">
+   662→                        {DAY_NAMES.map((day, idx) => (
+   663→                          <button
+   664→                            key={idx}
+   665→                            type="button"
+   666→                            onClick={() => toggleDay(idx)}
+   667→                            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-all border ${
+   668→                              selectedDays.includes(idx)
+   669→                                ? 'bg-[#F4D03F]/15 border-[#F4D03F]/40 text-[#F4D03F]'
+   670→                                : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'
+   671→                            }`}
+   672→                          >
+   673→                            {selectedDays.includes(idx) && <Check className="w-3 h-3" />}
+   674→                            <span>{day}</span>
+   675→                          </button>
+   676→                        ))}
+   677→                      </div>
+   678→
+   679→                      {selectedDays.length > 0 && (
+   680→                        <p className="text-[10px] text-white/25 mt-2 text-center">
+   681→                          Se creará {selectedDays.length === 1 ? '1 entrada' : `${selectedDays.length} entradas`} — {selectedDays.map(d => DAY_FULL_NAMES[d]).join(', ')}
+   682→                        </p>
+   683→                      )}
+   684→                    </div>
+   685→
+   686→                    <div>
+   687→                      <label className="text-[10px] text-white/40 mb-1 block">Género</label>
+   688→                      <Input
+   689→                        placeholder="Ej: Folclor"
+   690→                        value={editingProgram.genre || ''}
+   691→                        onChange={e => setEditingProgram(prev => ({ ...prev, genre: e.target.value }))}
+   692→                        className="bg-white/5 border-white/10 text-white text-xs"
+   693→                      />
+   694→                    </div>
+   695→                    {/* Image Upload */}
+   696→                    <div>
+   697→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo</label>
+   698→                      <div className="flex items-center gap-2">
+   699→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   700→                          <span className="text-xs text-white/50 truncate">
+   701→                            {editingProgram.imageUrl || 'Seleccionar imagen...'}
+   702→                          </span>
+   703→                          <input
+   704→                            type="file"
+   705→                            accept="image/*"
+   706→                            onChange={handleImageUpload}
+   707→                            className="hidden"
+   708→                          />
+   709→                        </label>
+   710→                        {uploadingImage && (
+   711→                          <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+   712→                        )}
+   713→                        {editingProgram.imageUrl && (
+   714→                          <button
+   715→                            onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))}
+   716→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   717→                            title="Quitar imagen"
+   718→                          >
+   719→                            <X className="w-3.5 h-3.5" />
+   720→                          </button>
+   721→                        )}
+   722→                      </div>
+   723→                      {editingProgram.imageUrl && (
+   724→                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
+   725→                          <img src={editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   726→                        </div>
+   727→                      )}
+   728→                    </div>
+   729→                    <div className="grid grid-cols-2 gap-3">
+   730→                      <div>
+   731→                        <label className="text-[10px] text-white/40 mb-1 block">Hora inicio *</label>
+   732→                        <Input
+   733→                          type="time"
+   734→                          value={editingProgram.startTime || ''}
+   735→                          onChange={e => setEditingProgram(prev => ({ ...prev, startTime: e.target.value }))}
+   736→                          className="bg-white/5 border-white/10 text-white text-xs"
+   737→                        />
+   738→                      </div>
+   739→                      <div>
+   740→                        <label className="text-[10px] text-white/40 mb-1 block">Hora fin *</label>
+   741→                        <Input
+   742→                          type="time"
+   743→                          value={editingProgram.endTime || ''}
+   744→                          onChange={e => setEditingProgram(prev => ({ ...prev, endTime: e.target.value }))}
+   745→                          className="bg-white/5 border-white/10 text-white text-xs"
+   746→                        />
+   747→                      </div>
+   748→                    </div>
+   749→                    <div className="flex items-center gap-2">
+   750→                      <Switch
+   751→                        checked={editingProgram.isActive ?? true}
+   752→                        onCheckedChange={v => setEditingProgram(prev => ({ ...prev, isActive: v }))}
+   753→                      />
+   754→                      <span className="text-xs text-white/60">Programa activo</span>
+   755→                    </div>
+   756→                    <Button onClick={saveProgram} className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D]">
+   757→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   758→                    </Button>
+   759→                  </div>
+   760→                </DialogContent>
+   761→              </Dialog>
+   762→            </div>
+   763→
+   764→            <div className="space-y-3 max-h-[500px] overflow-y-auto hide-scrollbar">
+   765→              {Object.keys(groupedPrograms).length === 0 ? (
+   766→                <p className="text-center text-white/30 text-sm py-8">No hay programas creados</p>
+   767→              ) : (
+   768→                Object.entries(groupedPrograms).map(([name, progs]) => {
+   769→                  const firstProg = progs[0];
+   770→                  const dayCount = progs.length;
+   771→                  const allDays = progs.every(p => p.isActive);
+   772→                  const dayLabels = progs
+   773→                    .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+   774→                    .map(p => DAY_NAMES[p.dayOfWeek]);
+   775→
+   776→                  return (
+   777→                    <div key={name} className={`p-3 rounded-xl border transition-all ${allDays ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   778→                      <div className="flex items-start justify-between">
+   779→                        <div className="flex-1 min-w-0">
+   780→                          <div className="flex items-center gap-2 flex-wrap">
+   781→                            <h4 className="text-sm font-semibold text-white truncate">{name}</h4>
+   782→                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+   783→                              dayCount === 7
+   784→                                ? 'bg-[#F4D03F]/20 text-[#F4D03F]'
+   785→                                : 'bg-white/10 text-white/40'
+   786→                            }`}>
+   787→                              {dayCount === 7 ? 'Todos los días' : dayLabels.join(' · ')}
+   788→                            </span>
+   789→                          </div>
+   790→                          <p className="text-[11px] text-white/40 mt-0.5">
+   791→                            {firstProg.startTime} - {firstProg.endTime}
+   792→                            {firstProg.host && ` | ${firstProg.host}`}
+   793→                            {firstProg.genre && ` | ${firstProg.genre}`}
+   794→                          </p>
+   795→                        </div>
+   796→                        <div className="flex items-center gap-1">
+   797→                          <Switch
+   798→                            checked={allDays}
+   799→                            onCheckedChange={() => toggleProgramActive(firstProg)}
+   800→                            className="scale-75"
+   801→                          />
+   802→                          <Button
+   803→                            variant="ghost"
+   804→                            size="sm"
+   805→                            onClick={() => openEditProgram(firstProg)}
+   806→                            className="h-7 w-7 p-0 text-white/40 hover:text-white"
+   807→                            title="Editar"
+   808→                          >
+   809→                            <Settings className="w-3.5 h-3.5" />
+   810→                          </Button>
+   811→                          <Button
+   812→                            variant="ghost"
+   813→                            size="sm"
+   814→                            onClick={() => deleteProgram(firstProg.id, name)}
+   815→                            className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+   816→                            title="Eliminar"
+   817→                          >
+   818→                            <Trash2 className="w-3.5 h-3.5" />
+   819→                          </Button>
+   820→                        </div>
+   821→                      </div>
+   822→                    </div>
+   823→                  );
+   824→                })
+   825→              )}
+   826→            </div>
+   827→          </TabsContent>
+   828→
+   829→          {/* MESSAGES TAB (renamed to Información) */}
+   830→          <TabsContent value="messages" className="mt-4">
+   831→            <div className="flex items-center justify-between mb-3">
+   832→              <h3 className="text-sm font-semibold text-white/70">Información y Anuncios</h3>
+   833→              <Dialog open={messageDialog} onOpenChange={setMessageDialog}>
+   834→                <DialogTrigger asChild>
+   835→                  <Button
+   836→                    size="sm"
+   837→                    onClick={() => setEditingMessage({ type: 'info', priority: 0, isActive: true })}
+   838→                    className="bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] text-xs h-8"
+   839→                  >
+   840→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   841→                  </Button>
+   842→                </DialogTrigger>
+   843→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
+   844→                  <DialogHeader>
+   845→                    <DialogTitle className="text-white">
+   846→                      {editingMessage.id ? 'Editar Información' : 'Nueva Información'}
+   847→                    </DialogTitle>
+   848→                  </DialogHeader>
+   849→                  <div className="space-y-3 mt-2">
+   850→                    <Textarea
+   851→                      placeholder="Contenido del mensaje *"
+   852→                      value={editingMessage.content || ''}
+   853→                      onChange={e => setEditingMessage(prev => ({ ...prev, content: e.target.value }))}
+   854→                      className="bg-white/5 border-white/10 text-white min-h-[80px]"
+   855→                    />
+   856→                    <div className="grid grid-cols-2 gap-3">
+   857→                      <div>
+   858→                        <label className="text-[10px] text-white/40 mb-1 block">Tipo</label>
+   859→                        <Select
+   860→                          value={editingMessage.type || 'info'}
+   861→                          onValueChange={v => setEditingMessage(prev => ({ ...prev, type: v }))}
+   862→                        >
+   863→                          <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
+   864→                            <SelectValue />
+   865→                          </SelectTrigger>
+   866→                          <SelectContent className="bg-[#1a2332] border-white/10">
+   867→                            <SelectItem value="info" className="text-white text-xs">Información</SelectItem>
+   868→                            <SelectItem value="alert" className="text-white text-xs">Alerta</SelectItem>
+   869→                            <SelectItem value="promotion" className="text-white text-xs">Promoción</SelectItem>
+   870→                          </SelectContent>
+   871→                        </Select>
+   872→                      </div>
+   873→                      <div>
+   874→                        <label className="text-[10px] text-white/40 mb-1 block">Prioridad (0-10)</label>
+   875→                        <Input
+   876→                          type="number"
+   877→                          min="0"
+   878→                          max="10"
+   879→                          value={editingMessage.priority ?? 0}
+   880→                          onChange={e => setEditingMessage(prev => ({ ...prev, priority: parseInt(e.target.value) || 0 }))}
+   881→                          className="bg-white/5 border-white/10 text-white text-xs"
+   882→                        />
+   883→                      </div>
+   884→                    </div>
+   885→                    {/* Image Upload for message */}
+   886→                    <div>
+   887→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen (1:1 recomendado)</label>
+   888→                      <div className="flex items-center gap-2">
+   889→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   890→                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+   891→                          <span className="text-xs text-white/50 truncate">
+   892→                            {editingMessage.imageUrl
+   893→                              ? editingMessage.imageUrl.replace('/uploads/', '')
+   894→                              : 'Seleccionar imagen...'}
+   895→                          </span>
+   896→                          <input
+   897→                            type="file"
+   898→                            accept="image/*"
+   899→                            onChange={handleMessageImageUpload}
+   900→                            className="hidden"
+   901→                          />
+   902→                        </label>
+   903→                        {uploadingMsgImage && (
+   904→                          <span className="text-[10px] text-[#F4D03F] animate-pulse">Subiendo...</span>
+   905→                        )}
+   906→                        {editingMessage.imageUrl && (
+   907→                          <button
+   908→                            onClick={() => setEditingMessage(prev => ({ ...prev, imageUrl: '' }))}
+   909→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   910→                            title="Quitar imagen"
+   911→                          >
+   912→                            <X className="w-3.5 h-3.5" />
+   913→                          </button>
+   914→                        )}
+   915→                      </div>
+   916→                      {editingMessage.imageUrl && (
+   917→                        <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+   918→                          <img src={editingMessage.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   919→                        </div>
+   920→                      )}
+   921→                    </div>
+   922→                    <div className="flex items-center gap-2">
+   923→                      <Switch
+   924→                        checked={editingMessage.isActive ?? true}
+   925→                        onCheckedChange={v => setEditingMessage(prev => ({ ...prev, isActive: v }))}
+   926→                      />
+   927→                      <span className="text-xs text-white/60">Activo</span>
+   928→                    </div>
+   929→                    <Button onClick={saveMessage} className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D]">
+   930→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   931→                    </Button>
+   932→                  </div>
+   933→                </DialogContent>
+   934→              </Dialog>
+   935→            </div>
+   936→
+   937→            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+   938→              {messages.length === 0 ? (
+   939→                <p className="text-center text-white/30 text-sm py-8">No hay mensajes de información</p>
+   940→              ) : (
+   941→                messages.map(msg => (
+   942→                  <div key={msg.id} className={`p-3 rounded-xl border ${msg.isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   943→                    <div className="flex items-start gap-3">
+   944→                      {/* Thumbnail */}
+   945→                      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+   946→                        {msg.imageUrl ? (
+   947→                          <img src={msg.imageUrl} alt="" className="w-full h-full object-cover" />
+   948→                        ) : (
+   949→                          <div className="w-full h-full flex items-center justify-center">
+   950→                            <ImageIcon className="w-4 h-4 text-white/15" />
+   951→                          </div>
+   952→                        )}
+   953→                      </div>
+   954→                      <div className="flex-1 min-w-0">
+   955→                        <p className="text-sm text-white line-clamp-2">{msg.content}</p>
+   956→                        <div className="flex items-center gap-2 mt-1">
+   957→                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+   958→                            msg.type === 'info' ? 'bg-sky-500/10 text-sky-400' :
+   959→                            msg.type === 'alert' ? 'bg-amber-500/10 text-amber-400' :
+   960→                            'bg-[#F4D03F]/10 text-[#F4D03F]'
+   961→                          }`}>
+   962→                            {msg.type === 'info' ? 'Info' : msg.type === 'alert' ? 'Alerta' : 'Promo'}
+   963→                          </span>
+   964→                          <span className="text-[10px] text-white/30">Prioridad: {msg.priority}</span>
+   965→                        </div>
+   966→                      </div>
+   967→                      <div className="flex items-center gap-1">
+   968→                        <Switch
+   969→                          checked={msg.isActive}
+   970→                          onCheckedChange={async () => {
+   971→                            await fetch('/api/messages', {
+   972→                              method: 'PUT',
+   973→                              headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   974→                              body: JSON.stringify({ id: msg.id, isActive: !msg.isActive }),
+   975→                            });
+   976→                            fetchAllData();
+   977→                          }}
+   978→                          className="scale-75"
+   979→                        />
+   980→                        <Button
+   981→                          variant="ghost"
+   982→                          size="sm"
+   983→                          onClick={() => { setEditingMessage(msg); setMessageDialog(true); }}
+   984→                          className="h-7 w-7 p-0 text-white/40 hover:text-white"
+   985→                        >
+   986→                          <Settings className="w-3.5 h-3.5" />
+   987→                        </Button>
+   988→                        <Button
+   989→                          variant="ghost"
+   990→                          size="sm"
+   991→                          onClick={() => deleteMessage(msg.id)}
+   992→                          className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+   993→                        >
+   994→                          <Trash2 className="w-3.5 h-3.5" />
+   995→                        </Button>
+   996→                      </div>
+   997→                    </div>
+   998→                  </div>
+   999→                ))
+  1000→              )}
+  1001→            </div>
+  1002→          </TabsContent>
+  1003→
+  1004→          {/* SONG REQUESTS TAB */}
+  1005→          <TabsContent value="requests" className="mt-4">
+  1006→            <div className="flex items-center justify-between mb-3">
+  1007→              <h3 className="text-sm font-semibold text-white/70">
+  1008→                Peticiones y Mensajes de Oyentes
+  1009→              </h3>
+  1010→              {unreadRequests > 0 && (
+  1011→                <Button
+  1012→                  size="sm"
+  1013→                  variant="ghost"
+  1014→                  onClick={async () => {
+  1015→                    for (const r of songRequests.filter(r => !r.isRead)) {
+  1016→                      await markRequestRead(r.id, true);
+  1017→                    }
+  1018→                  }}
+  1019→                  className="text-xs text-[#F4D03F] hover:bg-[#F4D03F]/10"
+  1020→                >
+  1021→                  <Check className="w-3 h-3 mr-1" /> Marcar todo leído
+  1022→                </Button>
+  1023→              )}
+  1024→            </div>
+  1025→
+  1026→            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+  1027→              {songRequests.length === 0 ? (
+  1028→                <div className="text-center py-8">
+  1029→                  <Send className="w-10 h-10 mx-auto mb-2 text-white/20" />
+  1030→                  <p className="text-white/30 text-sm">No hay peticiones aún</p>
+  1031→                  <p className="text-white/20 text-xs mt-1">Los oyentes pueden enviar peticiones desde la app</p>
+  1032→                </div>
+  1033→              ) : (
+  1034→                songRequests.map(req => {
+  1035→                  const typeIcon = req.type === 'greeting' ? Heart : req.type === 'message' ? MessageSquare : Music;
+  1036→                  const TypeIcon = typeIcon;
+  1037→                  const typeLabel = req.type === 'greeting' ? 'Saludo' : req.type === 'message' ? 'Mensaje' : 'Petición';
+  1038→                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-[#F4D03F] bg-[#F4D03F]/10';
+  1039→
+  1040→                  return (
+  1041→                    <div key={req.id} className={`p-3 rounded-xl border transition-all ${!req.isRead ? 'bg-white/5 border-[#F4D03F]/20' : 'bg-white/[0.02] border-white/5'}`}>
+  1042→                      <div className="flex items-start gap-2">
+  1043→                        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${typeColor}`}>
+  1044→                          <TypeIcon className="w-3.5 h-3.5" />
+  1045→                        </div>
+  1046→                        <div className="flex-1 min-w-0">
+  1047→                          <div className="flex items-center gap-2 mb-0.5">
+  1048→                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>{typeLabel}</span>
+  1049→                            {req.listenerName && (
+  1050→                              <span className="text-[11px] text-white/60">{req.listenerName}</span>
+  1051→                            )}
+  1052→                            <span className="text-[10px] text-white/20 ml-auto">
+  1053→                              {new Date(req.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+  1054→                            </span>
+  1055→                          </div>
+  1056→                          <p className={`text-sm ${!req.isRead ? 'text-white' : 'text-white/60'}`}>{req.message}</p>
+  1057→                        </div>
+  1058→                        <div className="flex items-center gap-0.5 shrink-0">
+  1059→                          <Button
+  1060→                            variant="ghost"
+  1061→                            size="sm"
+  1062→                            onClick={() => markRequestRead(req.id, !req.isRead)}
+  1063→                            className="h-6 w-6 p-0 text-white/30 hover:text-white"
+  1064→                            title={req.isRead ? 'Marcar no leído' : 'Marcar leído'}
+  1065→                          >
+  1066→                            {req.isRead ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+  1067→                          </Button>
+  1068→                          <Button
+  1069→                            variant="ghost"
+  1070→                            size="sm"
+  1071→                            onClick={() => deleteRequest(req.id)}
+  1072→                            className="h-6 w-6 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+  1073→                          >
+  1074→                            <Trash2 className="w-3 h-3" />
+  1075→                          </Button>
+  1076→                        </div>
+  1077→                      </div>
+  1078→                    </div>
+  1079→                  );
+  1080→                })
+  1081→              )}
+  1082→            </div>
+  1083→          </TabsContent>
+  1084→
+  1085→          {/* SETTINGS TAB */}
+  1086→          <TabsContent value="settings" className="mt-4 space-y-6">
+  1087→            <div>
+  1088→              <h3 className="text-sm font-semibold text-white/70 mb-3">Emisora</h3>
+  1089→              <div className="space-y-3">
+  1090→                <div>
+  1091→                  <label className="text-[10px] text-white/40 mb-1 block">URL del Stream</label>
+  1092→                  <Input
+  1093→                    value={settings.streamUrl}
+  1094→                    onChange={e => setSettings(prev => ({ ...prev, streamUrl: e.target.value }))}
+  1095→                    onBlur={() => saveSetting('streamUrl', settings.streamUrl)}
+  1096→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1097→                  />
+  1098→                </div>
+  1099→                <div>
+  1100→                  <label className="text-[10px] text-white/40 mb-1 block">URL del Blog</label>
+  1101→                  <Input
+  1102→                    value={settings.blogUrl || ''}
+  1103→                    onChange={e => setSettings(prev => ({ ...prev, blogUrl: e.target.value }))}
+  1104→                    onBlur={() => saveSetting('blogUrl', settings.blogUrl || '')}
+  1105→                    placeholder="http://161.97.154.157:8099"
+  1106→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1107→                  />
+  1108→                </div>
+  1109→                <div className="grid grid-cols-2 gap-3">
+  1110→                  <div>
+  1111→                    <label className="text-[10px] text-white/40 mb-1 block">Nombre</label>
+  1112→                    <Input
+  1113→                      value={settings.stationName}
+  1114→                      onChange={e => setSettings(prev => ({ ...prev, stationName: e.target.value }))}
+  1115→                      onBlur={() => saveSetting('stationName', settings.stationName)}
+  1116→                      className="bg-white/5 border-white/10 text-white text-xs"
+  1117→                    />
+  1118→                  </div>
+  1119→                  <div>
+  1120→                    <label className="text-[10px] text-white/40 mb-1 block">Eslogan</label>
+  1121→                    <Input
+  1122→                      value={settings.stationSlogan}
+  1123→                      onChange={e => setSettings(prev => ({ ...prev, stationSlogan: e.target.value }))}
+  1124→                      onBlur={() => saveSetting('stationSlogan', settings.stationSlogan)}
+  1125→                      className="bg-white/5 border-white/10 text-white text-xs"
+  1126→                    />
+  1127→                  </div>
+  1128→                </div>
+  1129→              </div>
+  1130→            </div>
+  1131→
+  1132→            <div>
+  1133→              <h3 className="text-sm font-semibold text-white/70 mb-3">Redes Sociales</h3>
+  1134→              <div className="space-y-3">
+  1135→                <div>
+  1136→                  <label className="text-[10px] text-white/40 mb-1 block">Facebook</label>
+  1137→                  <Input
+  1138→                    value={settings.facebookUrl}
+  1139→                    onChange={e => setSettings(prev => ({ ...prev, facebookUrl: e.target.value }))}
+  1140→                    onBlur={() => saveSetting('facebookUrl', settings.facebookUrl)}
+  1141→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1142→                  />
+  1143→                </div>
+  1144→                <div>
+  1145→                  <label className="text-[10px] text-white/40 mb-1 block">Instagram</label>
+  1146→                  <Input
+  1147→                    value={settings.instagramUrl}
+  1148→                    onChange={e => setSettings(prev => ({ ...prev, instagramUrl: e.target.value }))}
+  1149→                    onBlur={() => saveSetting('instagramUrl', settings.instagramUrl)}
+  1150→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1151→                  />
+  1152→                </div>
+  1153→                <div>
+  1154→                  <label className="text-[10px] text-white/40 mb-1 block">WhatsApp</label>
+  1155→                  <Input
+  1156→                    value={settings.whatsappUrl}
+  1157→                    onChange={e => setSettings(prev => ({ ...prev, whatsappUrl: e.target.value }))}
+  1158→                    onBlur={() => saveSetting('whatsappUrl', settings.whatsappUrl)}
+  1159→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1160→                  />
+  1161→                </div>
+  1162→                <div>
+  1163→                  <label className="text-[10px] text-white/40 mb-1 block">YouTube</label>
+  1164→                  <Input
+  1165→                    value={settings.youtubeUrl}
+  1166→                    onChange={e => setSettings(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+  1167→                    onBlur={() => saveSetting('youtubeUrl', settings.youtubeUrl)}
+  1168→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1169→                  />
+  1170→                </div>
+  1171→                <div>
+  1172→                  <label className="text-[10px] text-white/40 mb-1 block">TikTok</label>
+  1173→                  <Input
+  1174→                    value={settings.tiktokUrl}
+  1175→                    onChange={e => setSettings(prev => ({ ...prev, tiktokUrl: e.target.value }))}
+  1176→                    onBlur={() => saveSetting('tiktokUrl', settings.tiktokUrl)}
+  1177→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1178→                  />
+  1179→                </div>
+  1180→                <div>
+  1181→                  <label className="text-[10px] text-white/40 mb-1 block">X (Twitter)</label>
+  1182→                  <Input
+  1183→                    value={settings.xUrl}
+  1184→                    onChange={e => setSettings(prev => ({ ...prev, xUrl: e.target.value }))}
+  1185→                    onBlur={() => saveSetting('xUrl', settings.xUrl)}
+  1186→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1187→                  />
+  1188→                </div>
+  1189→              </div>
+  1190→            </div>
+  1191→
+  1192→            <div>
+  1193→              <h3 className="text-sm font-semibold text-white/70 mb-3">Seguridad</h3>
+  1194→              <div>
+  1195→                <label className="text-[10px] text-white/40 mb-1 block">Cambiar Contraseña de Admin</label>
+  1196→                <Input
+  1197→                  type="password"
+  1198→                  placeholder="Escribe nueva contraseña y presiona Enter"
+  1199→                  onKeyDown={e => {
+  1200→                    if (e.key === 'Enter' && (e.target as HTMLInputElement).value) {
+  1201→                      changePassword((e.target as HTMLInputElement).value);
+  1202→                      (e.target as HTMLInputElement).value = '';
+  1203→                    }
+  1204→                  }}
+  1205→                  className="bg-white/5 border-white/10 text-white text-xs"
+  1206→                />
+  1207→              </div>
+  1208→            </div>
+  1209→
+  1210→            {/* Activity Logs */}
+  1211→            <div>
+  1212→              <button
+  1213→                onClick={() => setExpandedLogs(!expandedLogs)}
+  1214→                className="flex items-center gap-2 text-sm font-semibold text-white/70 mb-3 w-full"
+  1215→              >
+  1216→                <h3>Registro de Actividad</h3>
+  1217→                {expandedLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+  1218→              </button>
+  1219→              {expandedLogs && (
+  1220→                <div className="space-y-1 max-h-60 overflow-y-auto hide-scrollbar">
+  1221→                  {logs.map(log => (
+  1222→                    <div key={log.id} className="flex items-start gap-2 px-2 py-1.5 text-[11px] rounded bg-white/[0.02]">
+  1223→                      <span className="text-white/20 font-mono shrink-0">
+  1224→                        {new Date(log.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+  1225→                      </span>
+  1226→                      <span className="text-[#F4D03F]/60 font-mono shrink-0">{log.action}</span>
+  1227→                      {log.detail && <span className="text-white/30 truncate">{log.detail}</span>}
+  1228→                    </div>
+  1229→                  ))}
+  1230→                </div>
+  1231→              )}
+  1232→            </div>
+  1233→          </TabsContent>
+  1234→        </Tabs>
+  1235→      </main>
+  1236→    </div>
+  1237→  );
+  1238→}
+  1239→

@@ -6,6 +6,7 @@ import ScheduleView from '@/components/radio/schedule-view';
 import MessageBanner from '@/components/radio/message-banner';
 import SongRequestForm from '@/components/radio/song-request-form';
 import BlogSection from '@/components/radio/blog-section';
+import VideoSection from '@/components/radio/video-section';
 import AdminPanel from '@/components/radio/admin-panel';
 import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -390,7 +391,7 @@ export default function HomePage() {
 
         {view === 'news' && (
           <motion.main key="news" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar relative z-10 px-4 pb-6">
-            <div className="pt-1"><BlogSection /></div>
+            <div className="pt-1"><VideoSection /><BlogSection /></div>
           </motion.main>
         )}
 
