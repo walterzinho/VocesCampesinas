@@ -217,7 +217,7 @@ export default function HomePage() {
         <nav className="shrink-0 bg-app-bg/95 backdrop-blur-lg border-t border-app-bdr pb-[env(safe-area-inset-bottom)] relative z-10">
           <div className="flex items-center justify-around py-2 px-2">
             {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación'], ['admin', Shield, 'Admin']] as const).map(([v, Icon, label]) => (
-              <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-[#F4D03F]' : 'text-app-tdim hover:text-app-t3'}`}>
+              <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-app-accent' : 'text-app-tdim hover:text-app-t3'}`}>
                 <Icon className="w-5 h-5" /><span className="text-[10px] font-medium">{label}</span>
               </button>
             ))}
@@ -226,7 +226,7 @@ export default function HomePage() {
 
         {/* Floating install button */}
         {showInstallBtn && (
-          <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-[#F4D03F] text-[#17202A] flex items-center justify-center shadow-xl hover:bg-[#D4AC0D] transition-all active:scale-90" title="Instalar app">
+          <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-app-accent text-app-bg flex items-center justify-center shadow-xl hover:bg-app-accent-dk transition-all active:scale-90" title="Instalar app">
             <Download className="w-5 h-5" />
           </button>
         )}
@@ -247,7 +247,7 @@ export default function HomePage() {
 
       {/* Floating install button */}
       {showInstallBtn && (
-        <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-[#F4D03F] text-[#17202A] flex items-center justify-center shadow-xl hover:bg-[#D4AC0D] transition-all active:scale-90 animate-bounce" title="Instalar app">
+        <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-app-accent text-app-bg flex items-center justify-center shadow-xl hover:bg-app-accent-dk transition-all active:scale-90 animate-bounce" title="Instalar app">
           <Download className="w-5 h-5" />
         </button>
       )}
@@ -298,10 +298,10 @@ export default function HomePage() {
             ) : (
               <>
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <Music className="w-3 h-3 text-[#F4D03F]/70" />
-                  <span className="text-[9px] font-bold text-[#F4D03F]/70 uppercase tracking-wider">Ahora suena</span>
+                  <Music className="w-3 h-3 text-app-accent/70" />
+                  <span className="text-[9px] font-bold text-app-accent/70 uppercase tracking-wider">Ahora suena</span>
                 </div>
-                <h3 className="text-lg font-bold text-[#F4D03F]/90 leading-tight">Música de la Tierrita</h3>
+                <h3 className="text-lg font-bold text-app-accent leading-tight">Música de la Tierrita</h3>
                 <p className="text-[11px] text-white/40">La mejor selección musical campesina</p>
               </>
             )}
@@ -406,7 +406,7 @@ export default function HomePage() {
       <nav className="shrink-0 bg-app-bg/95 backdrop-blur-lg border-t border-app-bdr pb-[env(safe-area-inset-bottom)] relative z-10">
         <div className="flex items-center justify-around py-2 px-2">
           {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación'], ['admin', Shield, 'Admin']] as const).map(([v, Icon, label]) => (
-            <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-[#F4D03F]' : 'text-app-tdim hover:text-app-t3'}`}>
+            <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-app-accent' : 'text-app-tdim hover:text-app-t3'}`}>
               <Icon className="w-5 h-5" /><span className="text-[10px] font-medium">{label}</span>
             </button>
           ))}

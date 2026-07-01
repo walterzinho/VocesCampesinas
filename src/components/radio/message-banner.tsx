@@ -22,8 +22,8 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; border: string; ac
     label: 'ALERTA', gradient: 'from-amber-600/20 via-amber-500/10 to-transparent', iconBg: 'bg-amber-500/15',
   },
   promotion: {
-    icon: Megaphone, color: 'text-[#F4D03F]', border: 'border-[#F4D03F]/20', accent: 'bg-[#F4D03F]/60',
-    label: 'PROMO', gradient: 'from-[#F4D03F]/20 via-[#F4D03F]/10 to-transparent', iconBg: 'bg-[#F4D03F]/15',
+    icon: Megaphone, color: 'text-app-accent', border: 'border-app-accent/20', accent: 'bg-app-accent',
+    label: 'PROMO', gradient: 'from-app-accent/20 via-app-accent/10 to-transparent', iconBg: 'bg-app-accent/15',
   },
 };
 
@@ -74,7 +74,7 @@ export default function MessageBanner() {
       <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-bold text-app-t3 uppercase tracking-wider">Información</span>
-          <span className="w-1 h-1 rounded-full bg-[#F4D03F]/40" />
+          <span className="w-1 h-1 rounded-full bg-app-accent/40" />
         </div>
         {visibleMessages.length > 1 && (
           <div className="flex items-center gap-1">
@@ -146,7 +146,7 @@ export default function MessageBanner() {
             <button
               key={idx}
               onClick={() => setCurrentIdx(idx)}
-              className={`h-1 rounded-full transition-all duration-300 ${idx === currentIdx % visibleMessages.length ? 'bg-[#F4D03F] w-5' : 'bg-app-tdim w-1.5'}`}
+              className={`h-1 rounded-full transition-all duration-300 ${idx === currentIdx % visibleMessages.length ? 'bg-app-accent w-5' : 'bg-app-tdim w-1.5'}`}
             />
           ))}
         </div>

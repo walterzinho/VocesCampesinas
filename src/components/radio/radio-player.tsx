@@ -144,15 +144,15 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
         <audio ref={audioRef} preload="none" />
         <button
           onClick={togglePlay}
-          className="shrink-0 w-9 h-9 rounded-full bg-[#F4D03F] flex items-center justify-center shadow-lg hover:bg-[#D4AC0D] transition-all active:scale-95"
+          className="shrink-0 w-9 h-9 rounded-full bg-app-accent flex items-center justify-center shadow-lg hover:bg-app-accent-dk transition-all active:scale-95"
           aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
         >
           {isLoading ? (
-            <Loader2 className="w-4 h-4 text-[#17202A] animate-spin" />
+            <Loader2 className="w-4 h-4 text-app-bg animate-spin" />
           ) : isPlaying ? (
-            <Pause className="w-4 h-4 text-[#17202A]" fill="#17202A" />
+            <Pause className="w-4 h-4 text-app-bg" fill="currentColor" />
           ) : (
-            <Play className="w-4 h-4 text-[#17202A] ml-0.5" fill="#17202A" />
+            <Play className="w-4 h-4 text-app-bg ml-0.5" fill="currentColor" />
           )}
         </button>
 
@@ -181,7 +181,7 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
             onValueChange={handleVolumeChange}
             max={1}
             step={0.01}
-            className="w-16 [&_[role=slider]]:bg-[#F4D03F] [&_[role=slider]]:border-0 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:rounded-full [&>span:first-child]:h-0.5 [&>span:first-child]:bg-white/20 [&>span>span]:bg-[#F4D03F]"
+            className="w-16 [&_[role=slider]]:bg-app-accent [&_[role=slider]]:border-0 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3 [&_[role=slider]]:rounded-full [&>span:first-child]:h-0.5 [&>span:first-child]:bg-app-tdim [&>span>span]:bg-app-accent"
           />
         </div>
       </div>
@@ -194,20 +194,20 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
       <audio ref={audioRef} preload="none" />
       <button
         onClick={togglePlay}
-        className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-[#F4D03F] to-[#D4AC0D] flex items-center justify-center shadow-[0_0_40px_rgba(244,208,63,0.3)] hover:shadow-[0_0_60px_rgba(244,208,63,0.5)] transition-all duration-300 active:scale-95 group"
+        className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-app-accent to-app-accent-dk flex items-center justify-center shadow-[0_0_40px_rgba(244,208,63,0.2)] hover:shadow-[0_0_60px_rgba(244,208,63,0.3)] transition-all duration-300 active:scale-95 group"
         aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
       >
         {isLoading ? (
-          <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 text-[#17202A] animate-spin" />
+          <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 text-app-bg animate-spin" />
         ) : isPlaying ? (
-          <Pause className="w-10 h-10 sm:w-12 sm:h-12 text-[#17202A] group-hover:scale-110 transition-transform" fill="#17202A" />
+          <Pause className="w-10 h-10 sm:w-12 sm:h-12 text-app-bg group-hover:scale-110 transition-transform" fill="currentColor" />
         ) : (
-          <Play className="w-10 h-10 sm:w-12 sm:h-12 text-[#17202A] ml-1 group-hover:scale-110 transition-transform" fill="#17202A" />
+          <Play className="w-10 h-10 sm:w-12 sm:h-12 text-app-bg ml-1 group-hover:scale-110 transition-transform" fill="currentColor" />
         )}
         {isPlaying && (
           <>
-            <span className="absolute inset-0 rounded-full border-2 border-[#F4D03F]/30 animate-ping" />
-            <span className="absolute -inset-2 rounded-full border border-[#F4D03F]/10 animate-pulse" />
+            <span className="absolute inset-0 rounded-full border-2 border-app-accent/30 animate-ping" />
+            <span className="absolute -inset-2 rounded-full border border-app-accent/10 animate-pulse" />
           </>
         )}
       </button>
@@ -235,7 +235,7 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
           onValueChange={handleVolumeChange}
           max={1}
           step={0.01}
-          className="flex-1 [&_[role=slider]]:bg-[#F4D03F] [&_[role=slider]]:border-0 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:rounded-full [&>span:first-child]:h-1 [&>span:first-child]:bg-white/20 [&>span>span]:bg-[#F4D03F]"
+          className="flex-1 [&_[role=slider]]:bg-app-accent [&_[role=slider]]:border-0 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:rounded-full [&>span:first-child]:h-1 [&>span:first-child]:bg-app-tdim [&>span>span]:bg-app-accent"
         />
       </div>
     </div>

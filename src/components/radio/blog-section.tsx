@@ -57,11 +57,11 @@ export default function BlogSection() {
     <div className="space-y-3">
       <div className="flex items-center justify-between px-1 mb-1">
         <div className="flex items-center gap-2">
-          <Newspaper className="w-4 h-4 text-[#F4D03F]" />
+          <Newspaper className="w-4 h-4 text-app-accent" />
           <h3 className="text-sm font-bold text-app-text">Noticias Destacadas</h3>
         </div>
         {blogBaseUrl && (
-          <a href={blogBaseUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#F4D03F]/60 hover:text-[#F4D03F] flex items-center gap-0.5 transition-colors">
+          <a href={blogBaseUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-app-accent/60 hover:text-app-accent flex items-center gap-0.5 transition-colors">
             Ver todas <ExternalLink className="w-3 h-3" />
           </a>
         )}
@@ -76,7 +76,7 @@ export default function BlogSection() {
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-app-surface"><ImageOff className="w-5 h-5 text-app-tdim" /></div>
               )}
-              <div className="absolute top-0 left-0 w-1 h-full bg-[#F4D03F]/60 rounded-r" />
+              <div className="absolute top-0 left-0 w-1 h-full bg-app-accent rounded-r" />
             </div>
             <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
               <div>

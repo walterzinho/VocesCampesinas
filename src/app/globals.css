@@ -52,8 +52,8 @@
   --color-app-tdim: var(--app-text-dim);
   --color-app-bdr: var(--app-border);
   --color-app-bdr-l: var(--app-border-light);
-  --color-app-accent: #F4D03F;
-  --color-app-accent-dk: #D4AC0D;
+  --color-app-accent: var(--accent-gold);
+  --color-app-accent-dk: var(--accent-gold-dark);
 }
 
 /* ===== THEME VARIABLES ===== */
@@ -61,6 +61,8 @@
 /* Dark theme (default) */
 :root {
   --radius: 0.625rem;
+  --accent-gold: #F4D03F;
+  --accent-gold-dark: #D4AC0D;
   --app-bg: #17202A;
   --app-text: #FFFFFF;
   --app-text-secondary: rgba(255,255,255,0.6);
@@ -108,14 +110,16 @@
 /* Light theme - E-ink style (warm parchment, not pure white) */
 [data-theme="light"] {
   --app-bg: #EDE9E0;
-  --app-text: #2A2825;
-  --app-text-secondary: #6B675F;
-  --app-text-muted: #9B978F;
-  --app-text-dim: #BCB8B0;
-  --app-surface: rgba(0,0,0,0.04);
-  --app-surface-hover: rgba(0,0,0,0.07);
-  --app-border: rgba(0,0,0,0.1);
-  --app-border-light: rgba(0,0,0,0.06);
+  --app-text: #1A1815;
+  --app-text-secondary: #5A5650;
+  --app-text-muted: #7A766E;
+  --app-text-dim: #B0ACA4;
+  --app-surface: rgba(0,0,0,0.05);
+  --app-surface-hover: rgba(0,0,0,0.09);
+  --app-border: rgba(0,0,0,0.13);
+  --app-border-light: rgba(0,0,0,0.08);
+  --accent-gold: #B8960A;
+  --accent-gold-dark: #8A7208;
 
   /* shadcn defaults (light e-ink) */
   --background: oklch(0.93 0.005 80);

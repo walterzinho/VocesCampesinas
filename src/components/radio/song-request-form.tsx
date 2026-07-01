@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const REQUEST_TYPES = [
-  { value: 'request', label: 'Petición', icon: Music, color: 'text-[#F4D03F] bg-[#F4D03F]/15 border-[#F4D03F]/30' },
+  { value: 'request', label: 'Petición', icon: Music, color: 'text-app-accent bg-app-accent/15 border-app-accent/30' },
   { value: 'greeting', label: 'Saludo', icon: Heart, color: 'text-pink-400 bg-pink-500/15 border-pink-500/30' },
   { value: 'message', label: 'Mensaje', icon: MessageSquare, color: 'text-sky-400 bg-sky-500/15 border-sky-500/30' },
 ];
@@ -93,8 +93,8 @@ export default function SongRequestForm() {
 
   if (sent) {
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-5 rounded-2xl bg-[#F4D03F]/10 border border-[#F4D03F]/20 text-center">
-        <CheckCircle className="w-10 h-10 mx-auto mb-2 text-[#F4D03F]" />
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-5 rounded-2xl bg-app-accent/10 border border-app-accent/20 text-center">
+        <CheckCircle className="w-10 h-10 mx-auto mb-2 text-app-accent" />
         <h4 className="text-sm font-bold text-app-text mb-1">¡Recibido!</h4>
         <p className="text-xs text-app-t3">Tu {typeLabel} fue enviado con éxito</p>
       </motion.div>
@@ -106,7 +106,7 @@ export default function SongRequestForm() {
       {/* Header */}
       <div className="px-4 py-2.5 border-b border-app-bdr-l">
         <div className="flex items-center gap-2">
-          <Send className="w-4 h-4 text-[#F4D03F]" />
+          <Send className="w-4 h-4 text-app-accent" />
           <h3 className="text-sm font-bold text-app-text">Escríbenos</h3>
         </div>
         <p className="text-[10px] text-app-t3 mt-0.5">Envía tu petición, saludo o mensaje al aire</p>
@@ -165,7 +165,7 @@ export default function SongRequestForm() {
         </AnimatePresence>
 
         {/* Submit */}
-        <Button onClick={handleSubmit} disabled={sending} className="w-full bg-[#F4D03F] text-[#17202A] hover:bg-[#D4AC0D] font-semibold text-xs h-10">
+        <Button onClick={handleSubmit} disabled={sending} className="w-full bg-app-accent text-app-bg hover:bg-app-accent-dk font-semibold text-xs h-10">
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4 mr-1.5" />Enviar {type === 'request' ? 'Petición' : type === 'greeting' ? 'Saludo' : 'Mensaje'}</>}
         </Button>
       </div>

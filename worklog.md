@@ -127,3 +127,33 @@ Stage Summary:
 - New uploads get /api/uploads/ paths; old /uploads/ paths automatically redirected client-side
 - Backwards compatible — existing DB records with /uploads/ URLs still work
 - Build successful, 15 routes total
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Fix light theme readability + rewrite schedule to show full week
+
+Work Log:
+- Light theme issue: #F4D03F (wheat/gold) had poor contrast on light background (#EDE9E0)
+- Added --accent-gold and --accent-gold-dark CSS variables scoped per theme:
+  - Dark: #F4D03F / #D4AC0D (unchanged)
+  - Light: #B8960A / #8A7208 (darker, high contrast on parchment)
+- Also improved light theme: --app-text darkened to #1A1815, --app-border increased to 0.13 opacity
+- Replaced all hardcoded #F4D03F in user-facing components with theme-aware classes (text-app-accent, bg-app-accent, border-app-accent, bg-app-accent-dk, text-app-bg)
+- Files updated: message-banner.tsx, song-request-form.tsx, blog-section.tsx, radio-player.tsx, page.tsx
+- Admin panel left unchanged (always dark theme)
+- Completely rewrote schedule-view.tsx:
+  - Now shows FULL WEEK by default, with today first
+  - Each day is a collapsible section (click header to toggle)
+  - Day headers show: day name, "Hoy" badge, "Al Aire" live indicator, program count
+  - Programs within each day show live/upcoming/normal states
+  - Today's section highlighted with subtle accent border
+  - "Música de la Tierrita" footer on today when no live program
+  - Empty state when no programs configured
+  - All colors theme-aware (no hardcoded #F4D03F)
+
+Stage Summary:
+- Light theme now has dark gold (#B8960A) for text/borders — readable on parchment background
+- Dark theme unchanged — still uses bright gold (#F4D03F)
+- Programming tab shows entire week at a glance, collapsible by day
+- Build successful, 15 routes, zero errors
