@@ -745,7 +745,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       </div>
                       {editingProgram.imageUrl && (
                         <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
-                          <img src={editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                          <img src={editingProgram.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.imageUrl.slice('/uploads'.length)}` : editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
                     </div>
@@ -913,7 +913,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                           <span className="text-xs text-white/50 truncate">
                             {editingMessage.imageUrl
-                              ? editingMessage.imageUrl.replace('/uploads/', '')
+                              ? editingMessage.imageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '')
                               : 'Seleccionar imagen...'}
                           </span>
                           <input
@@ -938,7 +938,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       </div>
                       {editingMessage.imageUrl && (
                         <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10">
-                          <img src={editingMessage.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                          <img src={editingMessage.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingMessage.imageUrl.slice('/uploads'.length)}` : editingMessage.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
                     </div>
@@ -967,7 +967,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       {/* Thumbnail */}
                       <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
                         {msg.imageUrl ? (
-                          <img src={msg.imageUrl} alt="" className="w-full h-full object-cover" />
+                          <img src={msg.imageUrl?.startsWith('/uploads/') ? `/api/uploads${msg.imageUrl.slice('/uploads'.length)}` : msg.imageUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <ImageIcon className="w-4 h-4 text-white/15" />

@@ -171,8 +171,8 @@ export default function HomePage() {
   };
 
   const backgroundImageUrl = useMemo(() => {
-    if (currentProgram?.imageUrl) return currentProgram.imageUrl;
-    return '/uploads/musicatierrita.png';
+    const raw = currentProgram?.imageUrl || '/api/uploads/musicatierrita.png';
+    return raw.startsWith('/uploads/') ? `/api/uploads${raw.slice('/uploads'.length)}` : raw;
   }, [currentProgram]);
 
   // Admin view — full screen but with player at top

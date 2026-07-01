@@ -101,3 +101,29 @@ Stage Summary:
 - Videos now save correctly (auth bug fixed) — shorts, watch, youtu.be, embed, live all supported
 - Blog images now load (proxy domain restriction removed)
 - Build successful, all 14 routes working
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Fix Información section images not loading on home page
+
+Work Log:
+- User reported: uploaded images in "Información" section (En Vivo tab) don't display — shows fallback icon instead
+- Analyzed screenshots: admin panel preview shows image correctly, but home page message card shows megaphone fallback
+- Root cause: next.config.ts has `output: "standalone"`. In standalone mode, Next.js only serves files from public/ that existed at BUILD TIME. Files uploaded at RUNTIME to public/uploads/ are NOT accessible via /uploads/filename.jpg
+- Created /api/uploads/[...filename]/route.ts — API route that reads uploaded files from filesystem at runtime with:
+  - Directory traversal prevention (path.resolve + startsWith check)
+  - Proper MIME type mapping (jpg, png, gif, webp, svg)
+  - Cache-Control headers for performance
+  - CORS headers for PWA compatibility
+- Updated /api/upload/route.ts to return /api/uploads/ path instead of /uploads/
+- Updated message-banner.tsx with resolveImageUrl() helper that converts old /uploads/ URLs to /api/uploads/ for backwards compatibility
+- Updated admin-panel.tsx: all <img> src and filename display now handle both old and new URL formats
+- Updated page.tsx: background image URL conversion for program images + default musicatierrita.png path
+- Verified: build succeeds with new /api/uploads/[...filename] route, all logic tests pass
+
+Stage Summary:
+- Images in Información section will now load correctly in standalone/production mode
+- New uploads get /api/uploads/ paths; old /uploads/ paths automatically redirected client-side
+- Backwards compatible — existing DB records with /uploads/ URLs still work
+- Build successful, 15 routes total

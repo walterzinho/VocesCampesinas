@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      url: `/uploads/${fileName}`,
+      url: `/api/uploads/${fileName}`,
       fileName,
     });
   } catch (err) {

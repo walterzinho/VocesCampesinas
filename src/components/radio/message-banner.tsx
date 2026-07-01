@@ -27,6 +27,13 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; border: string; ac
   },
 };
 
+function resolveImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  // Redirect old /uploads/ paths to /api/uploads/ for standalone mode compatibility
+  if (url.startsWith('/uploads/')) return `/api/uploads${url.slice('/uploads'.length)}`;
+  return url;
+}
+
 export default function MessageBanner() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
@@ -57,7 +64,8 @@ export default function MessageBanner() {
   const msg = visibleMessages[currentIdx % visibleMessages.length];
   const config = TYPE_CONFIG[msg.type] || TYPE_CONFIG.info;
   const Icon = config.icon;
-  const hasImage = msg.imageUrl && !imgErrors.has(msg.id);
+  const imgSrc = resolveImageUrl(msg.imageUrl);
+  const hasImage = imgSrc && !imgErrors.has(msg.id);
   const goNext = () => setCurrentIdx(prev => (prev + 1) % visibleMessages.length);
   const goPrev = () => setCurrentIdx(prev => (prev - 1 + visibleMessages.length) % visibleMessages.length);
 
@@ -91,7 +99,7 @@ export default function MessageBanner() {
             {hasImage ? (
               <div className="shrink-0 w-28 h-28 relative bg-app-surface overflow-hidden">
                 <img
-                  src={msg.imageUrl}
+                  src={imgSrc}
                   alt=""
                   className="w-full h-full object-cover"
                   loading="lazy"
