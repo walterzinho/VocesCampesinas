@@ -49,7 +49,7 @@ export default function HomePage() {
     stationName: 'Voces Campesinas',
     stationSlogan: 'El Campo Nos Une',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '', youtubeUrl: '', tiktokUrl: '', xUrl: '',
-    primaryColor: '#67b0eb', darkColor: '#121212', blogUrl: '',
+    primaryColor: '#e48d2a', darkColor: '#17202A', blogUrl: '',
     offAirName: 'Música de la Tierrita', offAirImageUrl: '',
   });
   const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
@@ -69,7 +69,7 @@ export default function HomePage() {
   // Apply theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#121212' : '#FFFFFF');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#17202A' : '#dedede');
     localStorage.setItem('vc-theme', theme);
   }, [theme]);
 
