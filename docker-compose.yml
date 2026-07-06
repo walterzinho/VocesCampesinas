@@ -1,0 +1,20 @@
+services:
+  voces-campesinas:
+    build: .
+    container_name: voces-campesinas
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist the SQLite database across container rebuilds
+      - db-data:/app/prisma
+      # Persist uploaded images across container rebuilds
+      - uploads-data:/app/public/uploads
+    environment:
+      - NODE_ENV=production
+      # Add any env vars you need:
+      # - ADMIN_PASSWORD=your-secure-password
+
+volumes:
+  db-data:
+  uploads-data:

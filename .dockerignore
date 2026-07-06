@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.gitignore
+skills
+*.md
+*.log
+.env*
+.z-ai-config
+.claude
+test
+prompt
+upload
