@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# Initialize database only if it doesn't exist
+# Initialize database from pre-built copy only if volume is empty
 if [ ! -f prisma/dev.db ]; then
   echo "Initializing database..."
-  ./node_modules/.bin/prisma db push --skip-generate --accept-data-loss
+  cp prisma-init/dev.db prisma/dev.db
 fi
 
 echo "Starting server..."

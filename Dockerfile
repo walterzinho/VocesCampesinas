@@ -14,6 +14,9 @@ COPY . .
 
 # Generate Prisma client
 RUN bunx prisma generate
+# Create the database with schema during build
+RUN bunx prisma db push --skip-generate --accept-data-loss
+# Build Next.js
 RUN bun run build
 
 # --- Production ---
@@ -24,24 +27,19 @@ ENV NODE_ENV=production
 # Copy standalone output
 COPY --from=builder /app/.next/standalone ./
 
-# Copy Prisma CLI + engine for runtime db push
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-# Copy Prisma schema for runtime migrations
-COPY --from=builder /app/prisma ./prisma
-
 # Copy static assets
 COPY --from=builder /app/.next/static ./.next/static
 
 # Copy public (icons, manifest, service worker, uploads)
 COPY --from=builder /app/public ./public
 
+# Copy pre-created database for initialization
+COPY --from=builder /app/prisma ./prisma-init
+
 # Copy entrypoint
 COPY --from=builder /app/docker-entrypoint.sh ./
-
 RUN chmod +x docker-entrypoint.sh
+
 RUN mkdir -p public/uploads prisma
 
 EXPOSE 3000
