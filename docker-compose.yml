@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: app
+    container_name: vocesapp_web
     restart: unless-stopped
     ports:
       - "8085:3000"
@@ -14,13 +14,6 @@ services:
       - NODE_ENV=production
       # Add any env vars you need:
       # - ADMIN_PASSWORD=your-secure-password
-    # Optional: connect to existing Docker network for Nginx
-    # networks:
-    #   - your-nginx-network
-
-# networks:
-#   your-nginx-network:
-#     external: true
 
 volumes:
   db-data:
