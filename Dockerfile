@@ -12,7 +12,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client & ensure schema is applied during build
+# Generate Prisma client
 RUN bunx prisma generate
 RUN bun run build
 
@@ -20,8 +20,6 @@ RUN bun run build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-
-RUN adduser --system --uid 1001 nextjs
 
 # Copy standalone output
 COPY --from=builder /app/.next/standalone ./
@@ -44,9 +42,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/docker-entrypoint.sh ./
 
 RUN chmod +x docker-entrypoint.sh
-RUN mkdir -p public/uploads prisma && chown -R nextjs:nextjs public/uploads prisma node_modules/.prisma node_modules/@prisma
-
-USER nextjs
+RUN mkdir -p public/uploads prisma
 
 EXPOSE 3000
 ENV PORT=3000
