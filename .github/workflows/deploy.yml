@@ -18,6 +18,7 @@ jobs:
           script: |
             cd /opt/voces-campesinas
             git pull origin main
-            docker compose up --build -d
+            docker compose up --build -d --no-deps app
             echo "Cleaning old images..."
             docker image prune -f
+            echo "Deploy complete - only vocesapp_web was affected"
