@@ -9,6 +9,7 @@ RUN bun install --frozen-lockfile
 # --- Build ---
 FROM base AS builder
 WORKDIR /app
+ENV DATABASE_URL="file:./dev.db"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
