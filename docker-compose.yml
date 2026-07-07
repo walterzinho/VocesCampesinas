@@ -12,8 +12,7 @@ services:
       - uploads-data:/app/public/uploads
     environment:
       - NODE_ENV=production
-      # Add any env vars you need:
-      # - ADMIN_PASSWORD=your-secure-password
+      - DATABASE_URL=file:./prisma/dev.db
 
 volumes:
   db-data:
