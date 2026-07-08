@@ -101,10 +101,37 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
 
   useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
-    if (isPlaying && 'wakeLock' in navigator) {
-      (navigator as any).wakeLock.request('screen').then((lock: WakeLockSentinel) => { wakeLock = lock; }).catch(() => {});
+
+    const requestWakeLock = async () => {
+      if (!('wakeLock' in navigator)) return;
+      try {
+        wakeLock = await (navigator as any).wakeLock.request('screen');
+      } catch { /* not supported or denied */ }
+    };
+
+    if (isPlaying) {
+      requestWakeLock();
     }
-    return () => { wakeLock?.release(); };
+
+    // Re-request wake lock when page becomes visible again (e.g. user switches back)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && isPlaying) {
+        requestWakeLock();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Re-request wake lock when it gets released unexpectedly
+    const handleWakeLockRelease = () => {
+      if (isPlaying) requestWakeLock();
+    };
+    wakeLock?.addEventListener('release', handleWakeLockRelease);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      wakeLock?.removeEventListener('release', handleWakeLockRelease);
+      wakeLock?.release();
+    };
   }, [isPlaying]);
 
   const togglePlay = async () => {
