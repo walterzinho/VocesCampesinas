@@ -1,4 +1,4 @@
-const CACHE_NAME = 'voces-campesinas-v1';
+const CACHE_NAME = 'voces-campesinas-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
