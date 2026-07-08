@@ -1,0 +1,1500 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useCallback } from 'react';
+     4→     4→import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon, Play } from 'lucide-react';
+     5→     5→import { Button } from '@/components/ui/button';
+     6→     6→import { Input } from '@/components/ui/input';
+     7→     7→import { Textarea } from '@/components/ui/textarea';
+     8→     8→import { Switch } from '@/components/ui/switch';
+     9→     9→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    10→    10→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+    11→    11→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    12→    12→import { toast } from 'sonner';
+    13→    13→
+    14→    14→const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    15→    15→const DAY_FULL_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    16→    16→
+    17→    17→interface Program {
+    18→    18→  id: string;
+    19→    19→  name: string;
+    20→    20→  host: string | null;
+    21→    21→  description: string | null;
+    22→    22→  dayOfWeek: number;
+    23→    23→  startTime: string;
+    24→    24→  endTime: string;
+    25→    25→  isActive: boolean;
+    26→    26→  genre: string | null;
+    27→    27→  sortOrder: number;
+    28→    28→  imageUrl: string | null;
+    29→    29→}
+    30→    30→
+    31→    31→interface Message {
+    32→    32→  id: string;
+    33→    33→  content: string;
+    34→    34→  type: string;
+    35→    35→  imageUrl: string | null;
+    36→    36→  isActive: boolean;
+    37→    37→  priority: number;
+    38→    38→}
+    39→    39→
+    40→    40→interface SongRequest {
+    41→    41→  id: string;
+    42→    42→  listenerName: string | null;
+    43→    43→  message: string;
+    44→    44→  type: string;
+    45→    45→  isRead: boolean;
+    46→    46→  createdAt: string;
+    47→    47→}
+    48→    48→
+    49→    49→interface AppSettings {
+    50→    50→  streamUrl: string;
+    51→    51→  stationName: string;
+    52→    52→  stationSlogan: string;
+    53→    53→  facebookUrl: string;
+    54→    54→  instagramUrl: string;
+    55→    55→  whatsappUrl: string;
+    56→    56→  youtubeUrl: string;
+    57→    57→  tiktokUrl: string;
+    58→    58→  xUrl: string;
+    59→    59→  primaryColor: string;
+    60→    60→  darkColor: string;
+    61→    61→  blogUrl: string;
+    62→    62→  offAirName: string;
+    63→    63→  offAirImageUrl: string;
+    64→    64→}
+    65→    65→
+    66→    66→interface Video {
+    67→    67→  id: string;
+    68→    68→  title: string;
+    69→    69→  youtubeUrl: string;
+    70→    70→  description: string | null;
+    71→    71→  isActive: boolean;
+    72→    72→  sortOrder: number;
+    73→    73→  createdAt: string;
+    74→    74→}
+    75→    75→
+    76→    76→interface Log {
+    77→    77→  id: string;
+    78→    78→  action: string;
+    79→    79→  detail: string | null;
+    80→    80→  createdAt: string;
+    81→    81→}
+    82→    82→
+    83→    83→interface AdminPanelProps {
+    84→    84→  onBack: () => void;
+    85→    85→}
+    86→    86→
+    87→    87→export default function AdminPanel({ onBack }: AdminPanelProps) {
+    88→    88→  const [isAuthenticated, setIsAuthenticated] = useState(false);
+    89→    89→  const [password, setPassword] = useState('');
+    90→    90→  const [loading, setLoading] = useState(false);
+    91→    91→
+    92→    92→  // Data states
+    93→    93→  const [programs, setPrograms] = useState<Program[]>([]);
+    94→    94→  const [messages, setMessages] = useState<Message[]>([]);
+    95→    95→  const [songRequests, setSongRequests] = useState<SongRequest[]>([]);
+    96→    96→  const [settings, setSettings] = useState<AppSettings>({
+    97→    97→    streamUrl: '', stationName: '', stationSlogan: '',
+    98→    98→    facebookUrl: '', instagramUrl: '', whatsappUrl: '',
+    99→    99→    youtubeUrl: '', tiktokUrl: '', xUrl: '',
+   100→   100→    primaryColor: '#e48d2a', darkColor: '#17202A',
+   101→   101→  });
+   102→   102→  const [offAirImage, setOffAirImage] = useState('');
+   103→   103→  const [uploadingOffAir, setUploadingOffAir] = useState(false);
+   104→   104→  const [logs, setLogs] = useState<Log[]>([]);
+   105→   105→  const [videos, setVideos] = useState<Video[]>([]);
+   106→   106→
+   107→   107→  // Dialog states
+   108→   108→  const [programDialog, setProgramDialog] = useState(false);
+   109→   109→  const [messageDialog, setMessageDialog] = useState(false);
+   110→   110→  const [editingProgram, setEditingProgram] = useState<Partial<Program>>({});
+   111→   111→  const [selectedDays, setSelectedDays] = useState<number[]>([new Date().getDay()]);
+   112→   112→  const [isEditingExisting, setIsEditingExisting] = useState(false);
+   113→   113→  const [editingMessage, setEditingMessage] = useState<Partial<Message>>({});
+   114→   114→  const [expandedLogs, setExpandedLogs] = useState(false);
+   115→   115→  const [videoDialog, setVideoDialog] = useState(false);
+   116→   116→  const [editingVideo, setEditingVideo] = useState<Partial<Video>>({});
+   117→   117→  const [videoForm, setVideoForm] = useState({ title: '', youtubeUrl: '', description: '' });
+   118→   118→
+   119→   119→  const authHeader = useCallback(() => ({
+   120→   120→    headers: { 'Authorization': `Bearer ${password}` },
+   121→   121→  }), [password]);
+   122→   122→
+   123→   123→  // Login
+   124→   124→  const handleLogin = async () => {
+   125→   125→    setLoading(true);
+   126→   126→    try {
+   127→   127→      const res = await fetch('/api/admin', {
+   128→   128→        method: 'POST',
+   129→   129→        headers: { 'Content-Type': 'application/json' },
+   130→   130→        body: JSON.stringify({ password }),
+   131→   131→      });
+   132→   132→      if (res.ok) {
+   133→   133→        setIsAuthenticated(true);
+   134→   134→        toast.success('Sesión iniciada');
+   135→   135→        fetchAllData();
+   136→   136→      } else {
+   137→   137→        toast.error('Contraseña incorrecta');
+   138→   138→      }
+   139→   139→    } catch {
+   140→   140→      toast.error('Error de conexión');
+   141→   141→    }
+   142→   142→    setLoading(false);
+   143→   143→  };
+   144→   144→
+   145→   145→  const fetchAllData = useCallback(async () => {
+   146→   146→    try {
+   147→   147→      const [progRes, msgRes, setRes, logRes, reqRes, vidRes] = await Promise.all([
+   148→   148→        fetch('/api/programs/all', authHeader()),
+   149→   149→        fetch('/api/messages/all', authHeader()),
+   150→   150→        fetch('/api/settings', authHeader()),
+   151→   151→        fetch('/api/admin', authHeader()),
+   152→   152→        fetch('/api/requests', authHeader()),
+   153→   153→        fetch('/api/videos', authHeader()),
+   154→   154→      ]);
+   155→   155→
+   156→   156→      if (progRes.ok) setPrograms(await progRes.json());
+   157→   157→      if (msgRes.ok) setMessages(await msgRes.json());
+   158→   158→      if (setRes.ok) {
+   159→   159→        const setData = await setRes.json();
+   160→   160→        setSettings(prev => ({ ...prev, ...setData }));
+   161→   161→        if (setData.offAirImageUrl) setOffAirImage(setData.offAirImageUrl);
+   162→   162→      }
+   163→   163→      if (logRes.ok) setLogs(await logRes.json());
+   164→   164→      if (reqRes.ok) setSongRequests(await reqRes.json());
+   165→   165→      if (vidRes.ok) setVideos(await vidRes.json());
+   166→   166→    } catch { /* ignore */ }
+   167→   167→  }, [authHeader]);
+   168→   168→
+   169→   169→  useEffect(() => {
+   170→   170→    if (isAuthenticated) {
+   171→   171→      fetchAllData();
+   172→   172→      const interval = setInterval(fetchAllData, 15000);
+   173→   173→      return () => clearInterval(interval);
+   174→   174→    }
+   175→   175→  }, [isAuthenticated, fetchAllData]);
+   176→   176→
+   177→   177→  // Quick day selection helpers
+   178→   178→  const setWeekdays = () => setSelectedDays([1, 2, 3, 4, 5]);
+   179→   179→  const setWeekend = () => setSelectedDays([0, 6]);
+   180→   180→  const toggleAllDays = () => {
+   181→   181→    if (selectedDays.length === 7) setSelectedDays([]);
+   182→   182→    else setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+   183→   183→  };
+   184→   184→  const toggleDay = (day: number) => {
+   185→   185→    setSelectedDays(prev =>
+   186→   186→      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+   187→   187→    );
+   188→   188→  };
+   189→   189→
+   190→   190→  const isQuickActive = (days: number[]) => {
+   191→   191→    if (selectedDays.length !== days.length) return false;
+   192→   192→    return days.every(d => selectedDays.includes(d));
+   193→   193→  };
+   194→   194→
+   195→   195→  // Image upload handler
+   196→   196→  const [uploadingImage, setUploadingImage] = useState(false);
+   197→   197→  const [uploadingMsgImage, setUploadingMsgImage] = useState(false);
+   198→   198→  const uploadFile = async (file: File, field: string): Promise<string | null> => {
+   199→   199→    if (file.size > 5 * 1024 * 1024) {
+   200→   200→      toast.error('La imagen es muy grande (máximo 5MB)');
+   201→   201→      return null;
+   202→   202→    }
+   203→   203→    if (!file.type.startsWith('image/')) {
+   204→   204→      toast.error('Solo se permiten imágenes');
+   205→   205→      return null;
+   206→   206→    }
+   207→   207→    try {
+   208→   208→      const formData = new FormData();
+   209→   209→      formData.append('file', file);
+   210→   210→      formData.append('field', field);
+   211→   211→      const res = await fetch('/api/upload', {
+   212→   212→        method: 'POST',
+   213→   213→        headers: { 'Authorization': `Bearer ${password}` },
+   214→   214→        body: formData,
+   215→   215→      });
+   216→   216→      if (res.ok) {
+   217→   217→        const data = await res.json();
+   218→   218→        return data.url;
+   219→   219→      } else {
+   220→   220→        const err = await res.json().catch(() => ({}));
+   221→   221→        toast.error(err.error || 'Error al subir imagen');
+   222→   222→        return null;
+   223→   223→      }
+   224→   224→    } catch (err) {
+   225→   225→      toast.error('Error de conexión al subir');
+   226→   226→      return null;
+   227→   227→    }
+   228→   228→  };
+   229→   229→
+   230→   230→  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   231→   231→    const file = e.target.files?.[0];
+   232→   232→    if (!file) return;
+   233→   233→    setUploadingImage(true);
+   234→   234→    const url = await uploadFile(file, 'program');
+   235→   235→    if (url) {
+   236→   236→      setEditingProgram(prev => ({ ...prev, imageUrl: url }));
+   237→   237→      toast.success('Imagen subida');
+   238→   238→    }
+   239→   239→    setUploadingImage(false);
+   240→   240→  };
+   241→   241→
+   242→   242→  const handleMessageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   243→   243→    const file = e.target.files?.[0];
+   244→   244→    if (!file) return;
+   245→   245→    setUploadingMsgImage(true);
+   246→   246→    const url = await uploadFile(file, 'message');
+   247→   247→    if (url) {
+   248→   248→      setEditingMessage(prev => ({ ...prev, imageUrl: url }));
+   249→   249→      toast.success('Imagen subida');
+   250→   250→    }
+   251→   251→    setUploadingMsgImage(false);
+   252→   252→  };
+   253→   253→
+   254→   254→  const handleOffAirImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   255→   255→    const file = e.target.files?.[0];
+   256→   256→    if (!file) return;
+   257→   257→    setUploadingOffAir(true);
+   258→   258→    const url = await uploadFile(file, 'offair');
+   259→   259→    if (url) {
+   260→   260→      setOffAirImage(url);
+   261→   261→      setSettings(prev => ({ ...prev, offAirImageUrl: url }));
+   262→   262→      await saveSettingDirect('offAirImageUrl', url);
+   263→   263→      toast.success('Imagen de fuera de aire actualizada');
+   264→   264→    }
+   265→   265→    setUploadingOffAir(false);
+   266→   266→  };
+   267→   267→
+   268→   268→  const saveSettingDirect = async (key: string, value: string) => {
+   269→   269→    try {
+   270→   270→      await fetch('/api/settings', {
+   271→   271→        method: 'PUT',
+   272→   272→        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   273→   273→        body: JSON.stringify({ key, value }),
+   274→   274→      });
+   275→   275→    } catch { /* */ }
+   276→   276→  };
+   277→   277→
+   278→   278→  // Program CRUD
+   279→   279→  const saveProgram = async () => {
+   280→   280→    if (!editingProgram.name || !editingProgram.startTime || !editingProgram.endTime) {
+   281→   281→      toast.error('Completa los campos obligatorios');
+   282→   282→      return;
+   283→   283→    }
+   284→   284→    if (selectedDays.length === 0) {
+   285→   285→      toast.error('Selecciona al menos un día');
+   286→   286→      return;
+   287→   287→    }
+   288→   288→
+   289→   289→    const basePayload = {
+   290→   290→      name: editingProgram.name,
+   291→   291→      host: editingProgram.host || '',
+   292→   292→      description: editingProgram.description || '',
+   293→   293→      startTime: editingProgram.startTime,
+   294→   294→      endTime: editingProgram.endTime,
+   295→   295→      genre: editingProgram.genre || '',
+   296→   296→      isActive: editingProgram.isActive ?? true,
+   297→   297→      sortOrder: editingProgram.sortOrder ?? 0,
+   298→   298→      imageUrl: editingProgram.imageUrl || '',
+   299→   299→    };
+   300→   300→
+   301→   301→    try {
+   302→   302→      let res;
+   303→   303→      if (isEditingExisting && editingProgram.id && selectedDays.length === 1) {
+   304→   304→        res = await fetch('/api/programs', {
+   305→   305→          method: 'PUT',
+   306→   306→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   307→   307→          body: JSON.stringify({ id: editingProgram.id, ...basePayload, dayOfWeek: selectedDays[0] }),
+   308→   308→        });
+   309→   309→      } else if (isEditingExisting) {
+   310→   310→        const oldName = editingProgram.name;
+   311→   311→        res = await fetch('/api/programs', {
+   312→   312→          method: 'PUT',
+   313→   313→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   314→   314→          body: JSON.stringify({
+   315→   315→            batchUpdateName: oldName,
+   316→   316→            days: selectedDays,
+   317→   317→            ...basePayload,
+   318→   318→          }),
+   319→   319→        });
+   320→   320→      } else {
+   321→   321→        res = await fetch('/api/programs', {
+   322→   322→          method: 'POST',
+   323→   323→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   324→   324→          body: JSON.stringify({ ...basePayload, days: selectedDays }),
+   325→   325→        });
+   326→   326→      }
+   327→   327→
+   328→   328→      if (res.ok) {
+   329→   329→        const dayLabel = selectedDays.length === 7 ? 'todos los días' : `${selectedDays.length} día(s)`;
+   330→   330→        toast.success(`${isEditingExisting ? 'Programa actualizado' : 'Programa creado'} para ${dayLabel}`);
+   331→   331→        setProgramDialog(false);
+   332→   332→        setEditingProgram({});
+   333→   333→        setSelectedDays([new Date().getDay()]);
+   334→   334→        setIsEditingExisting(false);
+   335→   335→        fetchAllData();
+   336→   336→      }
+   337→   337→    } catch {
+   338→   338→      toast.error('Error al guardar');
+   339→   339→    }
+   340→   340→  };
+   341→   341→
+   342→   342→  const deleteProgram = async (id: string, name?: string) => {
+   343→   343→    try {
+   344→   344→      const params = name ? `?name=${encodeURIComponent(name)}` : `?id=${id}`;
+   345→   345→      const res = await fetch(`/api/programs${params}`, {
+   346→   346→        method: 'DELETE',
+   347→   347→        ...authHeader(),
+   348→   348→      });
+   349→   349→      if (res.ok) {
+   350→   350→        toast.success(name ? `"${name}" eliminado de todos los días` : 'Programa eliminado');
+   351→   351→        fetchAllData();
+   352→   352→      }
+   353→   353→    } catch {
+   354→   354→      toast.error('Error al eliminar');
+   355→   355→    }
+   356→   356→  };
+   357→   357→
+   358→   358→  // Group programs by name for display
+   359→   359→  const groupedPrograms = programs.reduce((acc, prog) => {
+   360→   360→    const key = prog.name;
+   361→   361→    if (!acc[key]) acc[key] = [];
+   362→   362→    acc[key].push(prog);
+   363→   363→    return acc;
+   364→   364→  }, {} as Record<string, Program[]>);
+   365→   365→
+   366→   366→  const openEditProgram = (prog: Program) => {
+   367→   367→    setIsEditingExisting(true);
+   368→   368→    setEditingProgram(prog);
+   369→   369→    const sameNamePrograms = programs.filter(p => p.name === prog.name);
+   370→   370→    setSelectedDays(sameNamePrograms.map(p => p.dayOfWeek));
+   371→   371→    setProgramDialog(true);
+   372→   372→  };
+   373→   373→
+   374→   374→  const openNewProgram = () => {
+   375→   375→    setIsEditingExisting(false);
+   376→   376→    setEditingProgram({ isActive: true, sortOrder: 0 });
+   377→   377→    setSelectedDays([new Date().getDay()]);
+   378→   378→    setProgramDialog(true);
+   379→   379→  };
+   380→   380→
+   381→   381→  const toggleProgramActive = async (prog: Program) => {
+   382→   382→    try {
+   383→   383→      const sameName = programs.filter(p => p.name === prog.name);
+   384→   384→      const newActive = !prog.isActive;
+   385→   385→      for (const p of sameName) {
+   386→   386→        await fetch('/api/programs', {
+   387→   387→          method: 'PUT',
+   388→   388→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   389→   389→          body: JSON.stringify({ id: p.id, isActive: newActive }),
+   390→   390→        });
+   391→   391→      }
+   392→   392→      fetchAllData();
+   393→   393→    } catch { /* ignore */ }
+   394→   394→  };
+   395→   395→
+   396→   396→  // Message CRUD
+   397→   397→  const saveMessage = async () => {
+   398→   398→    if (!editingMessage.content) {
+   399→   399→      toast.error('Escribe un mensaje');
+   400→   400→      return;
+   401→   401→    }
+   402→   402→
+   403→   403→    const payload = {
+   404→   404→      content: editingMessage.content,
+   405→   405→      type: editingMessage.type || 'info',
+   406→   406→      priority: editingMessage.priority ?? 0,
+   407→   407→      isActive: editingMessage.isActive ?? true,
+   408→   408→      imageUrl: editingMessage.imageUrl || null,
+   409→   409→    };
+   410→   410→
+   411→   411→    try {
+   412→   412→      let res;
+   413→   413→      if (editingMessage.id) {
+   414→   414→        res = await fetch('/api/messages', {
+   415→   415→          method: 'PUT',
+   416→   416→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   417→   417→          body: JSON.stringify({ id: editingMessage.id, ...payload }),
+   418→   418→        });
+   419→   419→      } else {
+   420→   420→        res = await fetch('/api/messages', {
+   421→   421→          method: 'POST',
+   422→   422→          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   423→   423→          body: JSON.stringify(payload),
+   424→   424→        });
+   425→   425→      }
+   426→   426→
+   427→   427→      if (res.ok) {
+   428→   428→        toast.success(editingMessage.id ? 'Información actualizada' : 'Información creada');
+   429→   429→        setMessageDialog(false);
+   430→   430→        setEditingMessage({});
+   431→   431→        fetchAllData();
+   432→   432→      }
+   433→   433→    } catch {
+   434→   434→      toast.error('Error al guardar');
+   435→   435→    }
+   436→   436→  };
+   437→   437→
+   438→   438→  const deleteMessage = async (id: string) => {
+   439→   439→    try {
+   440→   440→      const res = await fetch(`/api/messages?id=${id}`, {
+   441→   441→        method: 'DELETE',
+   442→   442→        ...authHeader(),
+   443→   443→      });
+   444→   444→      if (res.ok) {
+   445→   445→        toast.success('Eliminado');
+   446→   446→        fetchAllData();
+   447→   447→      }
+   448→   448→    } catch {
+   449→   449→      toast.error('Error al eliminar');
+   450→   450→    }
+   451→   451→  };
+   452→   452→
+   453→   453→  // Mark request as read
+   454→   454→  const markRequestRead = async (id: string, read: boolean) => {
+   455→   455→    try {
+   456→   456→      await fetch('/api/requests', {
+   457→   457→        method: 'PUT',
+   458→   458→        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   459→   459→        body: JSON.stringify({ id, isRead: read }),
+   460→   460→      });
+   461→   461→      fetchAllData();
+   462→   462→    } catch { /* ignore */ }
+   463→   463→  };
+   464→   464→
+   465→   465→  // Delete request
+   466→   466→  const deleteRequest = async (id: string) => {
+   467→   467→    try {
+   468→   468→      const res = await fetch(`/api/requests?id=${id}`, {
+   469→   469→        method: 'DELETE',
+   470→   470→        ...authHeader(),
+   471→   471→      });
+   472→   472→      if (res.ok) {
+   473→   473→        toast.success('Petición eliminada');
+   474→   474→        fetchAllData();
+   475→   475→      }
+   476→   476→    } catch {
+   477→   477→      toast.error('Error al eliminar');
+   478→   478→    }
+   479→   479→  };
+   480→   480→
+   481→   481→  // Settings
+   482→   482→  const saveSetting = async (key: string, value: string) => {
+   483→   483→    try {
+   484→   484→      await fetch('/api/settings', {
+   485→   485→        method: 'PUT',
+   486→   486→        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+   487→   487→        body: JSON.stringify({ key, value }),
+   488→   488→      });
+   489→   489→      setSettings(prev => ({ ...prev, [key]: value }));
+   490→   490→      toast.success('Configuración guardada');
+   491→   491→    } catch {
+   492→   492→      toast.error('Error al guardar');
+   493→   493→    }
+   494→   494→  };
+   495→   495→
+   496→   496→  // Change password
+   497→   497→  const changePassword = async (newPass: string) => {
+   498→   498→    await saveSetting('adminPassword', newPass);
+   499→   499→  };
+   500→   500→
+   501→   501→  // Login screen
+   502→   502→  if (!isAuthenticated) {
+   503→   503→    return (
+   504→   504→      <div className="min-h-screen bg-[#17202A] flex items-center justify-center p-4">
+   505→   505→        <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+   506→   506→          <button
+   507→   507→            onClick={onBack}
+   508→   508→            className="absolute top-4 left-4 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+   509→   509→          >
+   510→   510→            <ArrowLeft className="w-4 h-4 text-white/60" />
+   511→   511→          </button>
+   512→   512→
+   513→   513→          <div className="flex flex-col items-center mb-6">
+   514→   514→            <div className="w-16 h-16 rounded-full bg-[#e48d2a]/10 flex items-center justify-center mb-3">
+   515→   515→              <Shield className="w-8 h-8 text-[#e48d2a]" />
+   516→   516→            </div>
+   517→   517→            <h2 className="text-xl font-bold text-white">Panel Admin</h2>
+   518→   518→            <p className="text-sm text-white/40 mt-1">Voces Campesinas</p>
+   519→   519→          </div>
+   520→   520→
+   521→   521→          <div className="space-y-4">
+   522→   522→            <div className="relative">
+   523→   523→              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+   524→   524→              <Input
+   525→   525→                type="password"
+   526→   526→                placeholder="Contraseña de administrador"
+   527→   527→                value={password}
+   528→   528→                onChange={e => setPassword(e.target.value)}
+   529→   529→                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+   530→   530→                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#e48d2a]/50"
+   531→   531→              />
+   532→   532→            </div>
+   533→   533→            <Button
+   534→   534→              onClick={handleLogin}
+   535→   535→              disabled={loading || !password}
+   536→   536→              className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] font-semibold"
+   537→   537→            >
+   538→   538→              {loading ? 'Verificando...' : (
+   539→   539→                <span className="flex items-center gap-2">
+   540→   540→                  <LogIn className="w-4 h-4" /> Ingresar
+   541→   541→                </span>
+   542→   542→              )}
+   543→   543→            </Button>
+   544→   544→          </div>
+   545→   545→        </div>
+   546→   546→      </div>
+   547→   547→    );
+   548→   548→  }
+   549→   549→
+   550→   550→  const unreadRequests = songRequests.filter(r => !r.isRead).length;
+   551→   551→
+   552→   552→  // Admin Dashboard
+   553→   553→  return (
+   554→   554→    <div className="min-h-screen bg-[#17202A] text-white">
+   555→   555→      {/* Header */}
+   556→   556→      <header className="sticky top-0 z-50 bg-[#17202A]/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
+   557→   557→        <div className="max-w-4xl mx-auto flex items-center justify-between">
+   558→   558→          <div className="flex items-center gap-3">
+   559→   559→            <button
+   560→   560→              onClick={onBack}
+   561→   561→              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+   562→   562→              title="Volver al reproductor"
+   563→   563→            >
+   564→   564→              <ArrowLeft className="w-4 h-4 text-white/60" />
+   565→   565→            </button>
+   566→   566→            <div className="w-8 h-8 rounded-lg bg-[#e48d2a] flex items-center justify-center">
+   567→   567→              <Radio className="w-4 h-4 text-[#17202A]" />
+   568→   568→            </div>
+   569→   569→            <div>
+   570→   570→              <h1 className="text-sm font-bold">Panel de Administración</h1>
+   571→   571→              <p className="text-[10px] text-white/40">Voces Campesinas</p>
+   572→   572→            </div>
+   573→   573→          </div>
+   574→   574→          <Button
+   575→   575→            variant="ghost"
+   576→   576→            size="sm"
+   577→   577→            onClick={() => { setIsAuthenticated(false); setPassword(''); }}
+   578→   578→            className="text-white/50 hover:text-white hover:bg-white/5"
+   579→   579→          >
+   580→   580→            <LogOut className="w-4 h-4 mr-1" /> Salir
+   581→   581→          </Button>
+   582→   582→        </div>
+   583→   583→      </header>
+   584→   584→
+   585→   585→      <main className="max-w-4xl mx-auto p-4 pb-20">
+   586→   586→        {/* Stats */}
+   587→   587→        <div className="grid grid-cols-4 gap-3 mb-6">
+   588→   588→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   589→   589→            <p className="text-2xl font-bold text-[#e48d2a]">{Object.keys(groupedPrograms).length}</p>
+   590→   590→            <p className="text-[10px] text-white/40">Programas</p>
+   591→   591→          </div>
+   592→   592→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   593→   593→            <p className="text-2xl font-bold text-[#e48d2a]">{messages.filter(m => m.isActive).length}</p>
+   594→   594→            <p className="text-[10px] text-white/40">Info Activos</p>
+   595→   595→          </div>
+   596→   596→          <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative">
+   597→   597→            <p className="text-2xl font-bold text-[#e48d2a]">{songRequests.length}</p>
+   598→   598→            <p className="text-[10px] text-white/40">Peticiones</p>
+   599→   599→            {unreadRequests > 0 && (
+   600→   600→              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center">{unreadRequests}</span>
+   601→   601→            )}
+   602→   602→          </div>
+   603→   603→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   604→   604→            <p className="text-2xl font-bold text-[#e48d2a]">{logs.length}</p>
+   605→   605→            <p className="text-[10px] text-white/40">Actividad</p>
+   606→   606→          </div>
+   607→   607→        </div>
+   608→   608→
+   609→   609→        <Tabs defaultValue="programs" className="w-full">
+   610→   610→          <TabsList className="w-full bg-white/5 border border-white/10 rounded-xl h-auto p-1">
+   611→   611→            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   612→   612→              <Clock className="w-3.5 h-3.5 mr-1" /> Programación
+   613→   613→            </TabsTrigger>
+   614→   614→            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   615→   615→              <Bell className="w-3.5 h-3.5 mr-1" /> Información
+   616→   616→            </TabsTrigger>
+   617→   617→            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg relative">
+   618→   618→              <Send className="w-3.5 h-3.5 mr-1" /> Peticiones
+   619→   619→              {unreadRequests > 0 && (
+   620→   620→                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full">{unreadRequests}</span>
+   621→   621→              )}
+   622→   622→            </TabsTrigger>
+   623→   623→            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   624→   624→              <Settings className="w-3.5 h-3.5 mr-1" /> Config
+   625→   625→            </TabsTrigger>
+   626→   626→            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   627→   627→              <Play className="w-3.5 h-3.5 mr-1" /> Videos
+   628→   628→            </TabsTrigger>
+   629→   629→          </TabsList>
+   630→   630→
+   631→   631→          {/* PROGRAMS TAB */}
+   632→   632→          <TabsContent value="programs" className="mt-4">
+   633→   633→            <div className="flex items-center justify-between mb-3">
+   634→   634→              <h3 className="text-sm font-semibold text-white/70">Todos los Programas</h3>
+   635→   635→              <Dialog open={programDialog} onOpenChange={setProgramDialog}>
+   636→   636→                <DialogTrigger asChild>
+   637→   637→                  <Button
+   638→   638→                    size="sm"
+   639→   639→                    onClick={openNewProgram}
+   640→   640→                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+   641→   641→                  >
+   642→   642→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   643→   643→                  </Button>
+   644→   644→                </DialogTrigger>
+   645→   645→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
+   646→   646→                  <DialogHeader>
+   647→   647→                    <DialogTitle className="text-white">
+   648→   648→                      {isEditingExisting ? 'Editar Programa' : 'Nuevo Programa'}
+   649→   649→                    </DialogTitle>
+   650→   650→                  </DialogHeader>
+   651→   651→                  <div className="space-y-3 mt-2">
+   652→   652→                    <Input
+   653→   653→                      placeholder="Nombre del programa *"
+   654→   654→                      value={editingProgram.name || ''}
+   655→   655→                      onChange={e => setEditingProgram(prev => ({ ...prev, name: e.target.value }))}
+   656→   656→                      className="bg-white/5 border-white/10 text-white"
+   657→   657→                    />
+   658→   658→                    <Input
+   659→   659→                      placeholder="Conductor"
+   660→   660→                      value={editingProgram.host || ''}
+   661→   661→                      onChange={e => setEditingProgram(prev => ({ ...prev, host: e.target.value }))}
+   662→   662→                      className="bg-white/5 border-white/10 text-white"
+   663→   663→                    />
+   664→   664→                    <Textarea
+   665→   665→                      placeholder="Descripción"
+   666→   666→                      value={editingProgram.description || ''}
+   667→   667→                      onChange={e => setEditingProgram(prev => ({ ...prev, description: e.target.value }))}
+   668→   668→                      className="bg-white/5 border-white/10 text-white min-h-[60px]"
+   669→   669→                    />
+   670→   670→
+   671→   671→                    {/* Day Selection with Quick Selects */}
+   672→   672→                    <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+   673→   673→                      <label className="text-xs text-white/60 font-medium mb-2 block">Días de emisión *</label>
+   674→   674→
+   675→   675→                      {/* Quick select buttons */}
+   676→   676→                      <div className="flex gap-1.5 mb-3">
+   677→   677→                        <button
+   678→   678→                          type="button"
+   679→   679→                          onClick={toggleAllDays}
+   680→   680→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   681→   681→                            isQuickActive([0, 1, 2, 3, 4, 5, 6])
+   682→   682→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   683→   683→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   684→   684→                          }`}
+   685→   685→                        >
+   686→   686→                          Todos
+   687→   687→                        </button>
+   688→   688→                        <button
+   689→   689→                          type="button"
+   690→   690→                          onClick={setWeekdays}
+   691→   691→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   692→   692→                            isQuickActive([1, 2, 3, 4, 5])
+   693→   693→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   694→   694→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   695→   695→                          }`}
+   696→   696→                        >
+   697→   697→                          Lun - Vie
+   698→   698→                        </button>
+   699→   699→                        <button
+   700→   700→                          type="button"
+   701→   701→                          onClick={setWeekend}
+   702→   702→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   703→   703→                            isQuickActive([0, 6])
+   704→   704→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   705→   705→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   706→   706→                          }`}
+   707→   707→                        >
+   708→   708→                          Fin de Semana
+   709→   709→                        </button>
+   710→   710→                      </div>
+   711→   711→
+   712→   712→                      {/* Individual day buttons */}
+   713→   713→                      <div className="grid grid-cols-7 gap-1">
+   714→   714→                        {DAY_NAMES.map((day, idx) => (
+   715→   715→                          <button
+   716→   716→                            key={idx}
+   717→   717→                            type="button"
+   718→   718→                            onClick={() => toggleDay(idx)}
+   719→   719→                            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-all border ${
+   720→   720→                              selectedDays.includes(idx)
+   721→   721→                                ? 'bg-[#e48d2a]/15 border-[#e48d2a]/40 text-[#e48d2a]'
+   722→   722→                                : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'
+   723→   723→                            }`}
+   724→   724→                          >
+   725→   725→                            {selectedDays.includes(idx) && <Check className="w-3 h-3" />}
+   726→   726→                            <span>{day}</span>
+   727→   727→                          </button>
+   728→   728→                        ))}
+   729→   729→                      </div>
+   730→   730→
+   731→   731→                      {selectedDays.length > 0 && (
+   732→   732→                        <p className="text-[10px] text-white/25 mt-2 text-center">
+   733→   733→                          Se creará {selectedDays.length === 1 ? '1 entrada' : `${selectedDays.length} entradas`} — {selectedDays.map(d => DAY_FULL_NAMES[d]).join(', ')}
+   734→   734→                        </p>
+   735→   735→                      )}
+   736→   736→                    </div>
+   737→   737→
+   738→   738→                    <div>
+   739→   739→                      <label className="text-[10px] text-white/40 mb-1 block">Género</label>
+   740→   740→                      <Input
+   741→   741→                        placeholder="Ej: Folclor"
+   742→   742→                        value={editingProgram.genre || ''}
+   743→   743→                        onChange={e => setEditingProgram(prev => ({ ...prev, genre: e.target.value }))}
+   744→   744→                        className="bg-white/5 border-white/10 text-white text-xs"
+   745→   745→                      />
+   746→   746→                    </div>
+   747→   747→                    {/* Image Upload */}
+   748→   748→                    <div>
+   749→   749→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo</label>
+   750→   750→                      <div className="flex items-center gap-2">
+   751→   751→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   752→   752→                          <span className="text-xs text-white/50 truncate">
+   753→   753→                            {editingProgram.imageUrl || 'Seleccionar imagen...'}
+   754→   754→                          </span>
+   755→   755→                          <input
+   756→   756→                            type="file"
+   757→   757→                            accept="image/*"
+   758→   758→                            onChange={handleImageUpload}
+   759→   759→                            className="hidden"
+   760→   760→                          />
+   761→   761→                        </label>
+   762→   762→                        {uploadingImage && (
+   763→   763→                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+   764→   764→                        )}
+   765→   765→                        {editingProgram.imageUrl && (
+   766→   766→                          <button
+   767→   767→                            onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))}
+   768→   768→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   769→   769→                            title="Quitar imagen"
+   770→   770→                          >
+   771→   771→                            <X className="w-3.5 h-3.5" />
+   772→   772→                          </button>
+   773→   773→                        )}
+   774→   774→                      </div>
+   775→   775→                      {editingProgram.imageUrl && (
+   776→   776→                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
+   777→   777→                          <img src={editingProgram.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.imageUrl.slice('/uploads'.length)}` : editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   778→   778→                        </div>
+   779→   779→                      )}
+   780→   780→                    </div>
+   781→   781→                    <div className="grid grid-cols-2 gap-3">
+   782→   782→                      <div>
+   783→   783→                        <label className="text-[10px] text-white/40 mb-1 block">Hora inicio *</label>
+   784→   784→                        <Input
+   785→   785→                          type="time"
+   786→   786→                          value={editingProgram.startTime || ''}
+   787→   787→                          onChange={e => setEditingProgram(prev => ({ ...prev, startTime: e.target.value }))}
+   788→   788→                          className="bg-white/5 border-white/10 text-white text-xs"
+   789→   789→                        />
+   790→   790→                      </div>
+   791→   791→                      <div>
+   792→   792→                        <label className="text-[10px] text-white/40 mb-1 block">Hora fin *</label>
+   793→   793→                        <Input
+   794→   794→                          type="time"
+   795→   795→                          value={editingProgram.endTime || ''}
+   796→   796→                          onChange={e => setEditingProgram(prev => ({ ...prev, endTime: e.target.value }))}
+   797→   797→                          className="bg-white/5 border-white/10 text-white text-xs"
+   798→   798→                        />
+   799→   799→                      </div>
+   800→   800→                    </div>
+   801→   801→                    <div className="flex items-center gap-2">
+   802→   802→                      <Switch
+   803→   803→                        checked={editingProgram.isActive ?? true}
+   804→   804→                        onCheckedChange={v => setEditingProgram(prev => ({ ...prev, isActive: v }))}
+   805→   805→                      />
+   806→   806→                      <span className="text-xs text-white/60">Programa activo</span>
+   807→   807→                    </div>
+   808→   808→                    <Button onClick={saveProgram} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+   809→   809→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   810→   810→                    </Button>
+   811→   811→                  </div>
+   812→   812→                </DialogContent>
+   813→   813→              </Dialog>
+   814→   814→            </div>
+   815→   815→
+   816→   816→            <div className="space-y-3 max-h-[500px] overflow-y-auto hide-scrollbar">
+   817→   817→              {Object.keys(groupedPrograms).length === 0 ? (
+   818→   818→                <p className="text-center text-white/30 text-sm py-8">No hay programas creados</p>
+   819→   819→              ) : (
+   820→   820→                Object.entries(groupedPrograms).map(([name, progs]) => {
+   821→   821→                  const firstProg = progs[0];
+   822→   822→                  const dayCount = progs.length;
+   823→   823→                  const allDays = progs.every(p => p.isActive);
+   824→   824→                  const dayLabels = progs
+   825→   825→                    .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+   826→   826→                    .map(p => DAY_NAMES[p.dayOfWeek]);
+   827→   827→
+   828→   828→                  return (
+   829→   829→                    <div key={name} className={`p-3 rounded-xl border transition-all ${allDays ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   830→   830→                      <div className="flex items-start justify-between">
+   831→   831→                        <div className="flex-1 min-w-0">
+   832→   832→                          <div className="flex items-center gap-2 flex-wrap">
+   833→   833→                            <h4 className="text-sm font-semibold text-white truncate">{name}</h4>
+   834→   834→                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+   835→   835→                              dayCount === 7
+   836→   836→                                ? 'bg-[#e48d2a]/20 text-[#e48d2a]'
+   837→   837→                                : 'bg-white/10 text-white/40'
+   838→   838→                            }`}>
+   839→   839→                              {dayCount === 7 ? 'Todos los días' : dayLabels.join(' · ')}
+   840→   840→                            </span>
+   841→   841→                          </div>
+   842→   842→                          <p className="text-[11px] text-white/40 mt-0.5">
+   843→   843→                            {firstProg.startTime} - {firstProg.endTime}
+   844→   844→                            {firstProg.host && ` | ${firstProg.host}`}
+   845→   845→                            {firstProg.genre && ` | ${firstProg.genre}`}
+   846→   846→                          </p>
+   847→   847→                        </div>
+   848→   848→                        <div className="flex items-center gap-1">
+   849→   849→                          <Switch
+   850→   850→                            checked={allDays}
+   851→   851→                            onCheckedChange={() => toggleProgramActive(firstProg)}
+   852→   852→                            className="scale-75"
+   853→   853→                          />
+   854→   854→                          <Button
+   855→   855→                            variant="ghost"
+   856→   856→                            size="sm"
+   857→   857→                            onClick={() => openEditProgram(firstProg)}
+   858→   858→                            className="h-7 w-7 p-0 text-white/40 hover:text-white"
+   859→   859→                            title="Editar"
+   860→   860→                          >
+   861→   861→                            <Settings className="w-3.5 h-3.5" />
+   862→   862→                          </Button>
+   863→   863→                          <Button
+   864→   864→                            variant="ghost"
+   865→   865→                            size="sm"
+   866→   866→                            onClick={() => deleteProgram(firstProg.id, name)}
+   867→   867→                            className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+   868→   868→                            title="Eliminar"
+   869→   869→                          >
+   870→   870→                            <Trash2 className="w-3.5 h-3.5" />
+   871→   871→                          </Button>
+   872→   872→                        </div>
+   873→   873→                      </div>
+   874→   874→                    </div>
+   875→   875→                  );
+   876→   876→                })
+   877→   877→              )}
+   878→   878→            </div>
+   879→   879→          </TabsContent>
+   880→   880→
+   881→   881→          {/* MESSAGES TAB (renamed to Información) */}
+   882→   882→          <TabsContent value="messages" className="mt-4">
+   883→   883→            <div className="flex items-center justify-between mb-3">
+   884→   884→              <h3 className="text-sm font-semibold text-white/70">Información y Anuncios</h3>
+   885→   885→              <Dialog open={messageDialog} onOpenChange={setMessageDialog}>
+   886→   886→                <DialogTrigger asChild>
+   887→   887→                  <Button
+   888→   888→                    size="sm"
+   889→   889→                    onClick={() => setEditingMessage({ type: 'info', priority: 0, isActive: true })}
+   890→   890→                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+   891→   891→                  >
+   892→   892→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   893→   893→                  </Button>
+   894→   894→                </DialogTrigger>
+   895→   895→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
+   896→   896→                  <DialogHeader>
+   897→   897→                    <DialogTitle className="text-white">
+   898→   898→                      {editingMessage.id ? 'Editar Información' : 'Nueva Información'}
+   899→   899→                    </DialogTitle>
+   900→   900→                  </DialogHeader>
+   901→   901→                  <div className="space-y-3 mt-2">
+   902→   902→                    <Textarea
+   903→   903→                      placeholder="Contenido del mensaje *"
+   904→   904→                      value={editingMessage.content || ''}
+   905→   905→                      onChange={e => setEditingMessage(prev => ({ ...prev, content: e.target.value }))}
+   906→   906→                      className="bg-white/5 border-white/10 text-white min-h-[80px]"
+   907→   907→                    />
+   908→   908→                    <div className="grid grid-cols-2 gap-3">
+   909→   909→                      <div>
+   910→   910→                        <label className="text-[10px] text-white/40 mb-1 block">Tipo</label>
+   911→   911→                        <Select
+   912→   912→                          value={editingMessage.type || 'info'}
+   913→   913→                          onValueChange={v => setEditingMessage(prev => ({ ...prev, type: v }))}
+   914→   914→                        >
+   915→   915→                          <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
+   916→   916→                            <SelectValue />
+   917→   917→                          </SelectTrigger>
+   918→   918→                          <SelectContent className="bg-[#1a2332] border-white/10">
+   919→   919→                            <SelectItem value="info" className="text-white text-xs">Información</SelectItem>
+   920→   920→                            <SelectItem value="alert" className="text-white text-xs">Alerta</SelectItem>
+   921→   921→                            <SelectItem value="promotion" className="text-white text-xs">Promoción</SelectItem>
+   922→   922→                          </SelectContent>
+   923→   923→                        </Select>
+   924→   924→                      </div>
+   925→   925→                      <div>
+   926→   926→                        <label className="text-[10px] text-white/40 mb-1 block">Prioridad (0-10)</label>
+   927→   927→                        <Input
+   928→   928→                          type="number"
+   929→   929→                          min="0"
+   930→   930→                          max="10"
+   931→   931→                          value={editingMessage.priority ?? 0}
+   932→   932→                          onChange={e => setEditingMessage(prev => ({ ...prev, priority: parseInt(e.target.value) || 0 }))}
+   933→   933→                          className="bg-white/5 border-white/10 text-white text-xs"
+   934→   934→                        />
+   935→   935→                      </div>
+   936→   936→                    </div>
+   937→   937→                    {/* Image Upload for message */}
+   938→   938→                    <div>
+   939→   939→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen (1:1 recomendado)</label>
+   940→   940→                      <div className="flex items-center gap-2">
+   941→   941→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   942→   942→                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+   943→   943→                          <span className="text-xs text-white/50 truncate">
+   944→   944→                            {editingMessage.imageUrl
+   945→   945→                              ? editingMessage.imageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '')
+   946→   946→                              : 'Seleccionar imagen...'}
+   947→   947→                          </span>
+   948→   948→                          <input
+   949→   949→                            type="file"
+   950→   950→                            accept="image/*"
+   951→   951→                            onChange={handleMessageImageUpload}
+   952→   952→                            className="hidden"
+   953→   953→                          />
+   954→   954→                        </label>
+   955→   955→                        {uploadingMsgImage && (
+   956→   956→                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+   957→   957→                        )}
+   958→   958→                        {editingMessage.imageUrl && (
+   959→   959→                          <button
+   960→   960→                            onClick={() => setEditingMessage(prev => ({ ...prev, imageUrl: '' }))}
+   961→   961→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   962→   962→                            title="Quitar imagen"
+   963→   963→                          >
+   964→   964→                            <X className="w-3.5 h-3.5" />
+   965→   965→                          </button>
+   966→   966→                        )}
+   967→   967→                      </div>
+   968→   968→                      {editingMessage.imageUrl && (
+   969→   969→                        <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+   970→   970→                          <img src={editingMessage.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingMessage.imageUrl.slice('/uploads'.length)}` : editingMessage.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   971→   971→                        </div>
+   972→   972→                      )}
+   973→   973→                    </div>
+   974→   974→                    <div className="flex items-center gap-2">
+   975→   975→                      <Switch
+   976→   976→                        checked={editingMessage.isActive ?? true}
+   977→   977→                        onCheckedChange={v => setEditingMessage(prev => ({ ...prev, isActive: v }))}
+   978→   978→                      />
+   979→   979→                      <span className="text-xs text-white/60">Activo</span>
+   980→   980→                    </div>
+   981→   981→                    <Button onClick={saveMessage} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+   982→   982→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   983→   983→                    </Button>
+   984→   984→                  </div>
+   985→   985→                </DialogContent>
+   986→   986→              </Dialog>
+   987→   987→            </div>
+   988→   988→
+   989→   989→            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+   990→   990→              {messages.length === 0 ? (
+   991→   991→                <p className="text-center text-white/30 text-sm py-8">No hay mensajes de información</p>
+   992→   992→              ) : (
+   993→   993→                messages.map(msg => (
+   994→   994→                  <div key={msg.id} className={`p-3 rounded-xl border ${msg.isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   995→   995→                    <div className="flex items-start gap-3">
+   996→   996→                      {/* Thumbnail */}
+   997→   997→                      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+   998→   998→                        {msg.imageUrl ? (
+   999→   999→                          <img src={msg.imageUrl?.startsWith('/uploads/') ? `/api/uploads${msg.imageUrl.slice('/uploads'.length)}` : msg.imageUrl} alt="" className="w-full h-full object-cover" />
+  1000→  1000→                        ) : (
+  1001→  1001→                          <div className="w-full h-full flex items-center justify-center">
+  1002→  1002→                            <ImageIcon className="w-4 h-4 text-white/15" />
+  1003→  1003→                          </div>
+  1004→  1004→                        )}
+  1005→  1005→                      </div>
+  1006→  1006→                      <div className="flex-1 min-w-0">
+  1007→  1007→                        <p className="text-sm text-white line-clamp-2">{msg.content}</p>
+  1008→  1008→                        <div className="flex items-center gap-2 mt-1">
+  1009→  1009→                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+  1010→  1010→                            msg.type === 'info' ? 'bg-sky-500/10 text-sky-400' :
+  1011→  1011→                            msg.type === 'alert' ? 'bg-amber-500/10 text-amber-400' :
+  1012→  1012→                            'bg-[#e48d2a]/10 text-[#e48d2a]'
+  1013→  1013→                          }`}>
+  1014→  1014→                            {msg.type === 'info' ? 'Info' : msg.type === 'alert' ? 'Alerta' : 'Promo'}
+  1015→  1015→                          </span>
+  1016→  1016→                          <span className="text-[10px] text-white/30">Prioridad: {msg.priority}</span>
+  1017→  1017→                        </div>
+  1018→  1018→                      </div>
+  1019→  1019→                      <div className="flex items-center gap-1">
+  1020→  1020→                        <Switch
+  1021→  1021→                          checked={msg.isActive}
+  1022→  1022→                          onCheckedChange={async () => {
+  1023→  1023→                            await fetch('/api/messages', {
+  1024→  1024→                              method: 'PUT',
+  1025→  1025→                              headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+  1026→  1026→                              body: JSON.stringify({ id: msg.id, isActive: !msg.isActive }),
+  1027→  1027→                            });
+  1028→  1028→                            fetchAllData();
+  1029→  1029→                          }}
+  1030→  1030→                          className="scale-75"
+  1031→  1031→                        />
+  1032→  1032→                        <Button
+  1033→  1033→                          variant="ghost"
+  1034→  1034→                          size="sm"
+  1035→  1035→                          onClick={() => { setEditingMessage(msg); setMessageDialog(true); }}
+  1036→  1036→                          className="h-7 w-7 p-0 text-white/40 hover:text-white"
+  1037→  1037→                        >
+  1038→  1038→                          <Settings className="w-3.5 h-3.5" />
+  1039→  1039→                        </Button>
+  1040→  1040→                        <Button
+  1041→  1041→                          variant="ghost"
+  1042→  1042→                          size="sm"
+  1043→  1043→                          onClick={() => deleteMessage(msg.id)}
+  1044→  1044→                          className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+  1045→  1045→                        >
+  1046→  1046→                          <Trash2 className="w-3.5 h-3.5" />
+  1047→  1047→                        </Button>
+  1048→  1048→                      </div>
+  1049→  1049→                    </div>
+  1050→  1050→                  </div>
+  1051→  1051→                ))
+  1052→  1052→              )}
+  1053→  1053→            </div>
+  1054→  1054→          </TabsContent>
+  1055→  1055→
+  1056→  1056→          {/* SONG REQUESTS TAB */}
+  1057→  1057→          <TabsContent value="requests" className="mt-4">
+  1058→  1058→            <div className="flex items-center justify-between mb-3">
+  1059→  1059→              <h3 className="text-sm font-semibold text-white/70">
+  1060→  1060→                Peticiones y Mensajes de Oyentes
+  1061→  1061→              </h3>
+  1062→  1062→              {unreadRequests > 0 && (
+  1063→  1063→                <Button
+  1064→  1064→                  size="sm"
+  1065→  1065→                  variant="ghost"
+  1066→  1066→                  onClick={async () => {
+  1067→  1067→                    for (const r of songRequests.filter(r => !r.isRead)) {
+  1068→  1068→                      await markRequestRead(r.id, true);
+  1069→  1069→                    }
+  1070→  1070→                  }}
+  1071→  1071→                  className="text-xs text-[#e48d2a] hover:bg-[#e48d2a]/10"
+  1072→  1072→                >
+  1073→  1073→                  <Check className="w-3 h-3 mr-1" /> Marcar todo leído
+  1074→  1074→                </Button>
+  1075→  1075→              )}
+  1076→  1076→            </div>
+  1077→  1077→
+  1078→  1078→            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+  1079→  1079→              {songRequests.length === 0 ? (
+  1080→  1080→                <div className="text-center py-8">
+  1081→  1081→                  <Send className="w-10 h-10 mx-auto mb-2 text-white/20" />
+  1082→  1082→                  <p className="text-white/30 text-sm">No hay peticiones aún</p>
+  1083→  1083→                  <p className="text-white/20 text-xs mt-1">Los oyentes pueden enviar peticiones desde la app</p>
+  1084→  1084→                </div>
+  1085→  1085→              ) : (
+  1086→  1086→                songRequests.map(req => {
+  1087→  1087→                  const typeIcon = req.type === 'greeting' ? Heart : req.type === 'message' ? MessageSquare : Music;
+  1088→  1088→                  const TypeIcon = typeIcon;
+  1089→  1089→                  const typeLabel = req.type === 'greeting' ? 'Saludo' : req.type === 'message' ? 'Mensaje' : 'Petición';
+  1090→  1090→                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-[#e48d2a] bg-[#e48d2a]/10';
+  1091→  1091→
+  1092→  1092→                  return (
+  1093→  1093→                    <div key={req.id} className={`p-3 rounded-xl border transition-all ${!req.isRead ? 'bg-white/5 border-[#e48d2a]/20' : 'bg-white/[0.02] border-white/5'}`}>
+  1094→  1094→                      <div className="flex items-start gap-2">
+  1095→  1095→                        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${typeColor}`}>
+  1096→  1096→                          <TypeIcon className="w-3.5 h-3.5" />
+  1097→  1097→                        </div>
+  1098→  1098→                        <div className="flex-1 min-w-0">
+  1099→  1099→                          <div className="flex items-center gap-2 mb-0.5">
+  1100→  1100→                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>{typeLabel}</span>
+  1101→  1101→                            {req.listenerName && (
+  1102→  1102→                              <span className="text-[11px] text-white/60">{req.listenerName}</span>
+  1103→  1103→                            )}
+  1104→  1104→                            <span className="text-[10px] text-white/20 ml-auto">
+  1105→  1105→                              {new Date(req.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+  1106→  1106→                            </span>
+  1107→  1107→                          </div>
+  1108→  1108→                          <p className={`text-sm ${!req.isRead ? 'text-white' : 'text-white/60'}`}>{req.message}</p>
+  1109→  1109→                        </div>
+  1110→  1110→                        <div className="flex items-center gap-0.5 shrink-0">
+  1111→  1111→                          <Button
+  1112→  1112→                            variant="ghost"
+  1113→  1113→                            size="sm"
+  1114→  1114→                            onClick={() => markRequestRead(req.id, !req.isRead)}
+  1115→  1115→                            className="h-6 w-6 p-0 text-white/30 hover:text-white"
+  1116→  1116→                            title={req.isRead ? 'Marcar no leído' : 'Marcar leído'}
+  1117→  1117→                          >
+  1118→  1118→                            {req.isRead ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+  1119→  1119→                          </Button>
+  1120→  1120→                          <Button
+  1121→  1121→                            variant="ghost"
+  1122→  1122→                            size="sm"
+  1123→  1123→                            onClick={() => deleteRequest(req.id)}
+  1124→  1124→                            className="h-6 w-6 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+  1125→  1125→                          >
+  1126→  1126→                            <Trash2 className="w-3 h-3" />
+  1127→  1127→                          </Button>
+  1128→  1128→                        </div>
+  1129→  1129→                      </div>
+  1130→  1130→                    </div>
+  1131→  1131→                  );
+  1132→  1132→                })
+  1133→  1133→              )}
+  1134→  1134→            </div>
+  1135→  1135→          </TabsContent>
+  1136→  1136→
+  1137→  1137→          {/* SETTINGS TAB */}
+  1138→  1138→          <TabsContent value="settings" className="mt-4 space-y-6">
+  1139→  1139→            <div>
+  1140→  1140→              <h3 className="text-sm font-semibold text-white/70 mb-3">Emisora</h3>
+  1141→  1141→              <div className="space-y-3">
+  1142→  1142→                <div>
+  1143→  1143→                  <label className="text-[10px] text-white/40 mb-1 block">URL del Stream</label>
+  1144→  1144→                  <Input
+  1145→  1145→                    value={settings.streamUrl}
+  1146→  1146→                    onChange={e => setSettings(prev => ({ ...prev, streamUrl: e.target.value }))}
+  1147→  1147→                    onBlur={() => saveSetting('streamUrl', settings.streamUrl)}
+  1148→  1148→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1149→  1149→                  />
+  1150→  1150→                </div>
+  1151→  1151→                <div>
+  1152→  1152→                  <label className="text-[10px] text-white/40 mb-1 block">URL del Blog</label>
+  1153→  1153→                  <Input
+  1154→  1154→                    value={settings.blogUrl || ''}
+  1155→  1155→                    onChange={e => setSettings(prev => ({ ...prev, blogUrl: e.target.value }))}
+  1156→  1156→                    onBlur={() => saveSetting('blogUrl', settings.blogUrl || '')}
+  1157→  1157→                    placeholder="http://161.97.154.157:8099"
+  1158→  1158→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1159→  1159→                  />
+  1160→  1160→                </div>
+  1161→  1161→                <div>
+  1162→  1162→                  <label className="text-[10px] text-white/40 mb-1 block">Nombre fuera de aire</label>
+  1163→  1163→                  <Input
+  1164→  1164→                    value={settings.offAirName || ''}
+  1165→  1165→                    onChange={e => setSettings(prev => ({ ...prev, offAirName: e.target.value }))}
+  1166→  1166→                    onBlur={() => saveSetting('offAirName', settings.offAirName || 'Música de la Tierrita')}
+  1167→  1167→                    placeholder="Música de la Tierrita"
+  1168→  1168→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1169→  1169→                  />
+  1170→  1170→                  <p className="text-[9px] text-white/25 mt-0.5">Se muestra cuando no hay programa al aire</p>
+  1171→  1171→                </div>
+  1172→  1172→                <div>
+  1173→  1173→                  <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo (fuera de aire)</label>
+  1174→  1174→                  <div className="flex items-center gap-2">
+  1175→  1175→                    <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+  1176→  1176→                      <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+  1177→  1177→                      <span className="text-xs text-white/50 truncate">
+  1178→  1178→                        {offAirImage
+  1179→  1179→                          ? offAirImage.replace(/^\/api\/uploads\//, '').replace('/uploads/', '')
+  1180→  1180→                          : 'Seleccionar imagen...'}
+  1181→  1181→                      </span>
+  1182→  1182→                      <input
+  1183→  1183→                        type="file"
+  1184→  1184→                        accept="image/*"
+  1185→  1185→                        onChange={handleOffAirImageUpload}
+  1186→  1186→                        className="hidden"
+  1187→  1187→                      />
+  1188→  1188→                    </label>
+  1189→  1189→                    {uploadingOffAir && (
+  1190→  1190→                      <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+  1191→  1191→                    )}
+  1192→  1192→                    {offAirImage && (
+  1193→  1193→                      <button
+  1194→  1194→                        onClick={async () => {
+  1195→  1195→                          setOffAirImage('');
+  1196→  1196→                          setSettings(prev => ({ ...prev, offAirImageUrl: '' }));
+  1197→  1197→                          await saveSettingDirect('offAirImageUrl', '');
+  1198→  1198→                          toast.success('Imagen removida');
+  1199→  1199→                        }}
+  1200→  1200→                        className="text-white/30 hover:text-red-400 transition-colors p-1"
+  1201→  1201→                        title="Quitar imagen"
+  1202→  1202→                      >
+  1203→  1203→                        <X className="w-3.5 h-3.5" />
+  1204→  1204→                      </button>
+  1205→  1205→                    )}
+  1206→  1206→                  </div>
+  1207→  1207→                  {offAirImage && (
+  1208→  1208→                    <div className="mt-2 w-20 h-14 rounded-lg overflow-hidden border border-white/10">
+  1209→  1209→                      <img src={offAirImage.startsWith('/uploads/') ? `/api/uploads${offAirImage.slice('/uploads'.length)}` : offAirImage} alt="Preview" className="w-full h-full object-cover" />
+  1210→  1210→                    </div>
+  1211→  1211→                  )}
+  1212→  1212→                  <p className="text-[9px] text-white/25 mt-0.5">Fondo que se muestra cuando no hay programa en vivo</p>
+  1213→  1213→                </div>
+  1214→  1214→                <div className="grid grid-cols-2 gap-3">
+  1215→  1215→                  <div>
+  1216→  1216→                    <label className="text-[10px] text-white/40 mb-1 block">Nombre</label>
+  1217→  1217→                    <Input
+  1218→  1218→                      value={settings.stationName}
+  1219→  1219→                      onChange={e => setSettings(prev => ({ ...prev, stationName: e.target.value }))}
+  1220→  1220→                      onBlur={() => saveSetting('stationName', settings.stationName)}
+  1221→  1221→                      className="bg-white/5 border-white/10 text-white text-xs"
+  1222→  1222→                    />
+  1223→  1223→                  </div>
+  1224→  1224→                  <div>
+  1225→  1225→                    <label className="text-[10px] text-white/40 mb-1 block">Eslogan</label>
+  1226→  1226→                    <Input
+  1227→  1227→                      value={settings.stationSlogan}
+  1228→  1228→                      onChange={e => setSettings(prev => ({ ...prev, stationSlogan: e.target.value }))}
+  1229→  1229→                      onBlur={() => saveSetting('stationSlogan', settings.stationSlogan)}
+  1230→  1230→                      className="bg-white/5 border-white/10 text-white text-xs"
+  1231→  1231→                    />
+  1232→  1232→                  </div>
+  1233→  1233→                </div>
+  1234→  1234→              </div>
+  1235→  1235→            </div>
+  1236→  1236→
+  1237→  1237→            <div>
+  1238→  1238→              <h3 className="text-sm font-semibold text-white/70 mb-3">Redes Sociales</h3>
+  1239→  1239→              <div className="space-y-3">
+  1240→  1240→                <div>
+  1241→  1241→                  <label className="text-[10px] text-white/40 mb-1 block">Facebook</label>
+  1242→  1242→                  <Input
+  1243→  1243→                    value={settings.facebookUrl}
+  1244→  1244→                    onChange={e => setSettings(prev => ({ ...prev, facebookUrl: e.target.value }))}
+  1245→  1245→                    onBlur={() => saveSetting('facebookUrl', settings.facebookUrl)}
+  1246→  1246→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1247→  1247→                  />
+  1248→  1248→                </div>
+  1249→  1249→                <div>
+  1250→  1250→                  <label className="text-[10px] text-white/40 mb-1 block">Instagram</label>
+  1251→  1251→                  <Input
+  1252→  1252→                    value={settings.instagramUrl}
+  1253→  1253→                    onChange={e => setSettings(prev => ({ ...prev, instagramUrl: e.target.value }))}
+  1254→  1254→                    onBlur={() => saveSetting('instagramUrl', settings.instagramUrl)}
+  1255→  1255→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1256→  1256→                  />
+  1257→  1257→                </div>
+  1258→  1258→                <div>
+  1259→  1259→                  <label className="text-[10px] text-white/40 mb-1 block">WhatsApp</label>
+  1260→  1260→                  <Input
+  1261→  1261→                    value={settings.whatsappUrl}
+  1262→  1262→                    onChange={e => setSettings(prev => ({ ...prev, whatsappUrl: e.target.value }))}
+  1263→  1263→                    onBlur={() => saveSetting('whatsappUrl', settings.whatsappUrl)}
+  1264→  1264→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1265→  1265→                  />
+  1266→  1266→                </div>
+  1267→  1267→                <div>
+  1268→  1268→                  <label className="text-[10px] text-white/40 mb-1 block">YouTube</label>
+  1269→  1269→                  <Input
+  1270→  1270→                    value={settings.youtubeUrl}
+  1271→  1271→                    onChange={e => setSettings(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+  1272→  1272→                    onBlur={() => saveSetting('youtubeUrl', settings.youtubeUrl)}
+  1273→  1273→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1274→  1274→                  />
+  1275→  1275→                </div>
+  1276→  1276→                <div>
+  1277→  1277→                  <label className="text-[10px] text-white/40 mb-1 block">TikTok</label>
+  1278→  1278→                  <Input
+  1279→  1279→                    value={settings.tiktokUrl}
+  1280→  1280→                    onChange={e => setSettings(prev => ({ ...prev, tiktokUrl: e.target.value }))}
+  1281→  1281→                    onBlur={() => saveSetting('tiktokUrl', settings.tiktokUrl)}
+  1282→  1282→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1283→  1283→                  />
+  1284→  1284→                </div>
+  1285→  1285→                <div>
+  1286→  1286→                  <label className="text-[10px] text-white/40 mb-1 block">X (Twitter)</label>
+  1287→  1287→                  <Input
+  1288→  1288→                    value={settings.xUrl}
+  1289→  1289→                    onChange={e => setSettings(prev => ({ ...prev, xUrl: e.target.value }))}
+  1290→  1290→                    onBlur={() => saveSetting('xUrl', settings.xUrl)}
+  1291→  1291→                    className="bg-white/5 border-white/10 text-white text-xs"
+  1292→  1292→                  />
+  1293→  1293→                </div>
+  1294→  1294→              </div>
+  1295→  1295→            </div>
+  1296→  1296→
+  1297→  1297→            <div>
+  1298→  1298→              <h3 className="text-sm font-semibold text-white/70 mb-3">Seguridad</h3>
+  1299→  1299→              <div>
+  1300→  1300→                <label className="text-[10px] text-white/40 mb-1 block">Cambiar Contraseña de Admin</label>
+  1301→  1301→                <Input
+  1302→  1302→                  type="password"
+  1303→  1303→                  placeholder="Escribe nueva contraseña y presiona Enter"
+  1304→  1304→                  onKeyDown={e => {
+  1305→  1305→                    if (e.key === 'Enter' && (e.target as HTMLInputElement).value) {
+  1306→  1306→                      changePassword((e.target as HTMLInputElement).value);
+  1307→  1307→                      (e.target as HTMLInputElement).value = '';
+  1308→  1308→                    }
+  1309→  1309→                  }}
+  1310→  1310→                  className="bg-white/5 border-white/10 text-white text-xs"
+  1311→  1311→                />
+  1312→  1312→              </div>
+  1313→  1313→            </div>
+  1314→  1314→
+  1315→  1315→            {/* Activity Logs */}
+  1316→  1316→            <div>
+  1317→  1317→              <button
+  1318→  1318→                onClick={() => setExpandedLogs(!expandedLogs)}
+  1319→  1319→                className="flex items-center gap-2 text-sm font-semibold text-white/70 mb-3 w-full"
+  1320→  1320→              >
+  1321→  1321→                <h3>Registro de Actividad</h3>
+  1322→  1322→                {expandedLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+  1323→  1323→              </button>
+  1324→  1324→              {expandedLogs && (
+  1325→  1325→                <div className="space-y-1 max-h-60 overflow-y-auto hide-scrollbar">
+  1326→  1326→                  {logs.map(log => (
+  1327→  1327→                    <div key={log.id} className="flex items-start gap-2 px-2 py-1.5 text-[11px] rounded bg-white/[0.02]">
+  1328→  1328→                      <span className="text-white/20 font-mono shrink-0">
+  1329→  1329→                        {new Date(log.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+  1330→  1330→                      </span>
+  1331→  1331→                      <span className="text-[#e48d2a]/60 font-mono shrink-0">{log.action}</span>
+  1332→  1332→                      {log.detail && <span className="text-white/30 truncate">{log.detail}</span>}
+  1333→  1333→                    </div>
+  1334→  1334→                  ))}
+  1335→  1335→                </div>
+  1336→  1336→              )}
+  1337→  1337→            </div>
+  1338→  1338→          </TabsContent>
+  1339→  1339→
+  1340→  1340→          {/* VIDEOS TAB */}
+  1341→  1341→          <TabsContent value="videos" className="mt-4">
+  1342→  1342→            <div className="flex items-center justify-between mb-3">
+  1343→  1343→              <h3 className="text-sm font-semibold text-white/70">Videos de YouTube</h3>
+  1344→  1344→              <Dialog open={videoDialog} onOpenChange={(open) => {
+  1345→  1345→                setVideoDialog(open);
+  1346→  1346→                if (!open) { setEditingVideo({}); setVideoForm({ title: '', youtubeUrl: '', description: '' }); }
+  1347→  1347→              }}>
+  1348→  1348→                <DialogTrigger asChild>
+  1349→  1349→                  <Button size="sm" variant="outline" className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white text-xs h-7 gap-1">
+  1350→  1350→                    <Plus className="w-3 h-3" /> Agregar
+  1351→  1351→                  </Button>
+  1352→  1352→                </DialogTrigger>
+  1353→  1353→                <DialogContent className="bg-[#1a1a2e] border-white/10 text-white max-w-md mx-4">
+  1354→  1354→                  <DialogHeader>
+  1355→  1355→                    <DialogTitle className="text-sm">{editingVideo.id ? 'Editar Video' : 'Agregar Video'}</DialogTitle>
+  1356→  1356→                  </DialogHeader>
+  1357→  1357→                  <div className="space-y-3 mt-2">
+  1358→  1358→                    <div>
+  1359→  1359→                      <label className="text-[10px] text-white/40 font-medium mb-1 block">Título del video *</label>
+  1360→  1360→                      <Input
+  1361→  1361→                        value={videoForm.title}
+  1362→  1362→                        onChange={e => setVideoForm(f => ({ ...f, title: e.target.value }))}
+  1363→  1363→                        placeholder="Título del video"
+  1364→  1364→                        className="bg-white/5 border-white/10 text-white text-xs"
+  1365→  1365→                      />
+  1366→  1366→                    </div>
+  1367→  1367→                    <div>
+  1368→  1368→                      <label className="text-[10px] text-white/40 font-medium mb-1 block">Enlace de YouTube *</label>
+  1369→  1369→                      <Input
+  1370→  1370→                        value={videoForm.youtubeUrl}
+  1371→  1371→                        onChange={e => setVideoForm(f => ({ ...f, youtubeUrl: e.target.value }))}
+  1372→  1372→                        placeholder="https://youtube.com/watch?v=... o solo el ID"
+  1373→  1373→                        className="bg-white/5 border-white/10 text-white text-xs"
+  1374→  1374→                      />
+  1375→  1375→                      <p className="text-[9px] text-white/30 mt-1">Pega el enlace completo de YouTube o solo el ID del video</p>
+  1376→  1376→                    </div>
+  1377→  1377→                    <div>
+  1378→  1378→                      <label className="text-[10px] text-white/40 font-medium mb-1 block">Descripción (opcional)</label>
+  1379→  1379→                      <Textarea
+  1380→  1380→                        value={videoForm.description}
+  1381→  1381→                        onChange={e => setVideoForm(f => ({ ...f, description: e.target.value }))}
+  1382→  1382→                        placeholder="Breve descripción del video"
+  1383→  1383→                        className="bg-white/5 border-white/10 text-white text-xs min-h-[60px] resize-none"
+  1384→  1384→                      />
+  1385→  1385→                    </div>
+  1386→  1386→                    <Button
+  1387→  1387→                      onClick={async () => {
+  1388→  1388→                        if (!videoForm.title.trim() || !videoForm.youtubeUrl.trim()) {
+  1389→  1389→                          toast.error('Título y enlace son requeridos');
+  1390→  1390→                          return;
+  1391→  1391→                        }
+  1392→  1392→                        try {
+  1393→  1393→                          const isEdit = !!editingVideo.id;
+  1394→  1394→                          const res = await fetch('/api/videos', {
+  1395→  1395→                            method: isEdit ? 'PUT' : 'POST',
+  1396→  1396→                            headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+  1397→  1397→                            body: JSON.stringify({
+  1398→  1398→                              ...(isEdit ? { id: editingVideo.id } : {}),
+  1399→  1399→                              title: videoForm.title,
+  1400→  1400→                              youtubeUrl: videoForm.youtubeUrl,
+  1401→  1401→                              description: videoForm.description,
+  1402→  1402→                            }),
+  1403→  1403→                          });
+  1404→  1404→                          if (res.ok) {
+  1405→  1405→                            toast.success(isEdit ? 'Video actualizado' : 'Video agregado');
+  1406→  1406→                            setVideoDialog(false);
+  1407→  1407→                            setEditingVideo({});
+  1408→  1408→                            setVideoForm({ title: '', youtubeUrl: '', description: '' });
+  1409→  1409→                            fetchAllData();
+  1410→  1410→                          } else {
+  1411→  1411→                            const err = await res.json();
+  1412→  1412→                            toast.error(err.error || 'Error al guardar');
+  1413→  1413→                          }
+  1414→  1414→                        } catch { toast.error('Error de conexión'); }
+  1415→  1415→                      }}
+  1416→  1416→                      className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs font-semibold h-9"
+  1417→  1417→                    >
+  1418→  1418→                      <Save className="w-3.5 h-3.5 mr-1" />
+  1419→  1419→                      {editingVideo.id ? 'Actualizar' : 'Guardar'}
+  1420→  1420→                    </Button>
+  1421→  1421→                  </div>
+  1422→  1422→                </DialogContent>
+  1423→  1423→              </Dialog>
+  1424→  1424→            </div>
+  1425→  1425→
+  1426→  1426→            {videos.length === 0 ? (
+  1427→  1427→              <div className="text-center py-8 text-white/30 text-xs">
+  1428→  1428→                <Play className="w-8 h-8 mx-auto mb-2 opacity-50" />
+  1429→  1429→                <p>No hay videos agregados</p>
+  1430→  1430→                <p className="text-[10px] mt-1">Agrega videos de YouTube que se mostrarán en la sección Noticias</p>
+  1431→  1431→              </div>
+  1432→  1432→            ) : (
+  1433→  1433→              <div className="space-y-2">
+  1434→  1434→                {videos.map(video => (
+  1435→  1435→                  <div key={video.id} className="p-3 rounded-xl bg-white/5 border border-white/10">
+  1436→  1436→                    <div className="flex items-start gap-3">
+  1437→  1437→                      {/* Thumbnail */}
+  1438→  1438→                      <div className="shrink-0 w-20 h-14 rounded-lg overflow-hidden bg-white/5 relative">
+  1439→  1439→                        <img
+  1440→  1440→                          src={`https://img.youtube.com/vi/${video.youtubeUrl}/mqdefault.jpg`}
+  1441→  1441→                          alt=""
+  1442→  1442→                          className="w-full h-full object-cover"
+  1443→  1443→                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+  1444→  1444→                        />
+  1445→  1445→                        <div className="absolute inset-0 flex items-center justify-center">
+  1446→  1446→                          <Play className="w-4 h-4 text-white/70" />
+  1447→  1447→                        </div>
+  1448→  1448→                      </div>
+  1449→  1449→                      <div className="flex-1 min-w-0">
+  1450→  1450→                        <h4 className="text-xs font-semibold text-white truncate">{video.title}</h4>
+  1451→  1451→                        <p className="text-[10px] text-white/30 mt-0.5 truncate">{video.description || 'Sin descripción'}</p>
+  1452→  1452→                        <div className="flex items-center gap-2 mt-1.5">
+  1453→  1453→                          <Switch
+  1454→  1454→                            checked={video.isActive}
+  1455→  1455→                            onCheckedChange={async (checked) => {
+  1456→  1456→                              await fetch('/api/videos', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeader().headers }, body: JSON.stringify({ id: video.id, isActive: checked }) });
+  1457→  1457→                              setVideos(vs => vs.map(v => v.id === video.id ? { ...v, isActive: checked } : v));
+  1458→  1458→                            }}
+  1459→  1459→                            className="scale-75"
+  1460→  1460→                          />
+  1461→  1461→                          <span className="text-[9px] text-white/40">{video.isActive ? 'Activo' : 'Inactivo'}</span>
+  1462→  1462→                        </div>
+  1463→  1463→                      </div>
+  1464→  1464→                      <div className="flex items-center gap-1 shrink-0">
+  1465→  1465→                        <button
+  1466→  1466→                          onClick={() => {
+  1467→  1467→                            setEditingVideo(video);
+  1468→  1468→                            setVideoForm({ title: video.title, youtubeUrl: video.youtubeUrl, description: video.description || '' });
+  1469→  1469→                            setVideoDialog(true);
+  1470→  1470→                          }}
+  1471→  1471→                          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white"
+  1472→  1472→                          title="Editar"
+  1473→  1473→                        >
+  1474→  1474→                          <Save className="w-3.5 h-3.5" />
+  1475→  1475→                        </button>
+  1476→  1476→                        <button
+  1477→  1477→                          onClick={async () => {
+  1478→  1478→                            if (!confirm('¿Eliminar este video?')) return;
+  1479→  1479→                            await fetch(`/api/videos?id=${video.id}`, { method: 'DELETE', ...authHeader() });
+  1480→  1480→                            setVideos(vs => vs.filter(v => v.id !== video.id));
+  1481→  1481→                            toast.success('Video eliminado');
+  1482→  1482→                          }}
+  1483→  1483→                          className="p-1.5 rounded-lg hover:bg-red-500/20 transition-colors text-white/40 hover:text-red-400"
+  1484→  1484→                          title="Eliminar"
+  1485→  1485→                        >
+  1486→  1486→                          <Trash2 className="w-3.5 h-3.5" />
+  1487→  1487→                        </button>
+  1488→  1488→                      </div>
+  1489→  1489→                    </div>
+  1490→  1490→                  </div>
+  1491→  1491→                ))}
+  1492→  1492→              </div>
+  1493→  1493→            )}
+  1494→  1494→          </TabsContent>
+  1495→  1495→        </Tabs>
+  1496→  1496→      </main>
+  1497→  1497→    </div>
+  1498→  1498→  );
+  1499→  1499→}
+  1500→  1500→
