@@ -78,7 +78,7 @@ export default function HomePage() {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch('/api/programs');
+        const res = await fetch('/api/programs/all');
         if (res.ok && !cancelled) {
           const programs: Program[] = await res.json();
           const now = new Date();
@@ -277,8 +277,8 @@ export default function HomePage() {
           {/* Background image */}
           <div className="absolute inset-0 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${backgroundImageUrl})` }} />
           {/* Gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-app-bg via-app-bg/70 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-app-bg/50 to-transparent h-1/3" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent h-1/3" />
 
           {/* Content */}
           <div className="relative flex flex-col justify-between p-3.5" style={{ minHeight: '140px' }}>
