@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">import type { NextConfig } from \"next\";\n\nconst nextConfig: NextConfig = {\n  output: \"standalone\",\n  /* config options here */\n  typescript: {\n    ignoreBuildErrors: true,\n  },\n  reactStrictMode: false,\n};\n\nexport default nextConfig;\n</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/next.config.ts",
+    "usage": {
+      "tokens": 100
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 100
+    }
+  },
+  "status": 20000
+}

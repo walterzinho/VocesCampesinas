@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">import { db } from '@/lib/db';\nimport { NextResponse } from 'next/server';\n\n// GET /api/programs/all - all programs for admin\nexport async function GET() {\n  try {\n    const programs = await db.program.findMany({\n      orderBy: [{ dayOfWeek: 'asc' }, { sortOrder: 'asc' }],\n    });\n    return NextResponse.json(programs);\n  } catch {\n    return NextResponse.json({ error: 'Error' }, { status: 500 });\n  }\n}</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/src/app/api/programs/all/route.ts",
+    "usage": {
+      "tokens": 145
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 145
+    }
+  },
+  "status": 20000
+}

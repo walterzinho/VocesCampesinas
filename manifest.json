@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">{\n  \"name\": \"Voces Campesinas - Emisora Digital\",\n  \"short_name\": \"Voces Campesinas\",\n  \"description\": \"El Campo Nos Une - Tu emisora digital del campo\",\n  \"start_url\": \"/\",\n  \"display\": \"standalone\",\n  \"background_color\": \"#17202A\",\n  \"theme_color\": \"#17202A\",\n  \"orientation\": \"portrait\",\n  \"scope\": \"/\",\n  \"categories\": [\"music\", \"entertainment\"],\n  \"lang\": \"es\",\n  \"icons\": [\n    {\n      \"src\": \"/icon-192.png\",\n      \"sizes\": \"192x192\",\n      \"type\": \"image/png\",\n      \"purpose\": \"any maskable\"\n    },\n    {\n      \"src\": \"/icon-512.png\",\n      \"sizes\": \"512x512\",\n      \"type\": \"image/png\",\n      \"purpose\": \"any maskable\"\n    }\n  ],\n  \"screenshots\": [],\n  \"prefer_related_applications\": false\n}</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "publishedTime": "Mon, 06 Jul 2026 20:51:21 GMT",
+    "title": "",
+    "url": "https://app.vocescampesinas.co/manifest.json",
+    "usage": {
+      "tokens": 259
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 259
+    }
+  },
+  "status": 20000
+}

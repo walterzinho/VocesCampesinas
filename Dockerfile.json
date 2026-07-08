@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">FROM oven/bun:1 AS base\n\n# --- Dependencies ---\nFROM base AS deps\nWORKDIR /app\nCOPY package.json bun.lock* ./\nRUN bun install --frozen-lockfile\n\n# --- Build ---\nFROM base AS builder\nWORKDIR /app\nENV DATABASE_URL=\"file:./dev.db\"\nCOPY --from=deps /app/node_modules ./node_modules\nCOPY . .\n\n# Generate Prisma client\nRUN bunx prisma generate\n# Create the database with schema during build\nRUN bunx prisma db push --skip-generate --accept-data-loss\n# Build Next.js\nRUN bun run build\n\n# --- Production ---\nFROM base AS runner\nWORKDIR /app\nENV NODE_ENV=production\n\n# Copy standalone output\nCOPY --from=builder /app/.next/standalone ./\n\n# Copy static assets\nCOPY --from=builder /app/.next/static ./.next/static\n\n# Copy public (icons, manifest, service worker, uploads)\nCOPY --from=builder /app/public ./public\n\n# Copy pre-created database for initialization\nCOPY --from=builder /app/prisma ./prisma-init\n\n# Copy entrypoint\nCOPY --from=builder /app/docker-entrypoint.sh ./\nRUN chmod +x docker-entrypoint.sh\n\nRUN mkdir -p public/uploads prisma\n\nEXPOSE 3000\nENV PORT=3000\nENV HOSTNAME=\"0.0.0.0\"\n\nCMD [\"./docker-entrypoint.sh\"]</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/Dockerfile",
+    "usage": {
+      "tokens": 343
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 343
+    }
+  },
+  "status": 20000
+}

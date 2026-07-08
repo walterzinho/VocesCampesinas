@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">import { db } from '@/lib/db';\nimport { NextRequest, NextResponse } from 'next/server';\n\nexport async function POST(request: NextRequest) {\n  try {\n    const { password } = await request.json();\n    if (!password) {\n      return NextResponse.json({ error: 'Password required' }, { status: 400 });\n    }\n\n    const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });\n    if (!setting) {\n      return NextResponse.json({ error: 'Admin not configured' }, { status: 500 });\n    }\n\n    if (password === setting.value) {\n      await db.adminLog.create({ data: { action: 'LOGIN', detail: 'Successful login' } });\n      return NextResponse.json({ success: true, token: password });\n    }\n\n    return NextResponse.json({ error: 'Invalid password' }, { status: 401 });\n  } catch {\n    return NextResponse.json({ error: 'Login error' }, { status: 500 });\n  }\n}\n\nexport async function GET(request: NextRequest) {\n  const authHeader = request.headers.get('authorization');\n  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });\n\n  const password = authHeader.replace('Bearer ', '');\n  const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });\n  if (!setting || password !== setting.value) {\n    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });\n  }\n\n  try {\n    const logs = await db.adminLog.findMany({\n      orderBy: { createdAt: 'desc' },\n      take: 50,\n    });\n    return NextResponse.json(logs);\n  } catch {\n    return NextResponse.json({ error: 'Error fetching logs' }, { status: 500 });\n  }\n}</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/src/app/api/admin/route.ts",
+    "usage": {
+      "tokens": 429
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 429
+    }
+  },
+  "status": 20000
+}

@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">#!/bin/sh\nset -e\n\n# Initialize database from pre-built copy only if volume is empty\nif [ ! -f prisma/dev.db ]; then\n  echo \"Initializing database...\"\n  cp prisma-init/dev.db prisma/dev.db\nfi\n\necho \"Starting server...\"\nexec bun server.js</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/docker-entrypoint.sh",
+    "usage": {
+      "tokens": 104
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 104
+    }
+  },
+  "status": 20000
+}

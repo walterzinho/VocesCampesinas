@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">services:\n  app:\n    build: .\n    container_name: vocesapp_web\n    restart: unless-stopped\n    ports:\n      - \"8085:3000\"\n    volumes:\n      # Persist the SQLite database across container rebuilds\n      - db-data:/app/prisma\n      # Persist uploaded images across container rebuilds\n      - uploads-data:/app/public/uploads\n    environment:\n      - NODE_ENV=production\n      - DATABASE_URL=file:./dev.db\n\nvolumes:\n  db-data:\n  uploads-data:\n</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/docker-compose.yml",
+    "usage": {
+      "tokens": 152
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 152
+    }
+  },
+  "status": 20000
+}

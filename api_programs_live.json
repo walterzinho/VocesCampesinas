@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">[{\"id\":\"cmrc5iy8j0006o70179h6lygl\",\"name\":\"Magazín \\\"Campesinos en Acción\\\"\",\"host\":\"ANUC La Palma\",\"description\":\"Programa Institucional de ANUC La Palma\",\"dayOfWeek\":6,\"startTime\":\"06:30\",\"endTime\":\"07:00\",\"isActive\":true,\"imageUrl\":\"\",\"genre\":\"MAgazín\",\"sortOrder\":0,\"createdAt\":\"2026-07-08T14:06:49.555Z\",\"updatedAt\":\"2026-07-08T14:06:49.555Z\"},{\"id\":\"cmrc5pn9c000eo7010e9o0llm\",\"name\":\"Magazín \\\"Región Activa\\\"\",\"host\":\"Jotta Ricón\",\"description\":\"Programa de la Corporación Cultural \\\"CorpoActúa\\\"\",\"dayOfWeek\":6,\"startTime\":\"07:30\",\"endTime\":\"11:00\",\"isActive\":true,\"imageUrl\":\"\",\"genre\":\"Magazín\",\"sortOrder\":0,\"createdAt\":\"2026-07-08T14:12:01.920Z\",\"updatedAt\":\"2026-07-08T14:12:01.920Z\"}]</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://app.vocescampesinas.co/api/programs/all",
+    "usage": {
+      "tokens": 293
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 293
+    }
+  },
+  "status": 20000
+}

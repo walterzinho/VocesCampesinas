@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">generator client {\n  provider = \"prisma-client-js\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Program {\n  id        String   @id @default(cuid())\n  name      String\n  host      String?\n  description String?\n  dayOfWeek Int      // 0=Dom, 1=Lun, ..., 6=Sab\n  startTime String   // \"06:00\"\n  endTime   String   // \"08:00\"\n  isActive  Boolean  @default(true)\n  imageUrl  String?\n  genre     String?\n  sortOrder Int      @default(0)\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n\nmodel Message {\n  id        String   @id @default(cuid())\n  content   String\n  type      String   @default(\"info\") // info, alert, promotion\n  imageUrl  String?\n  isActive  Boolean  @default(true)\n  priority  Int      @default(0)\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n\nmodel Settings {\n  id    String @id @default(cuid())\n  key   String @unique\n  value String\n}\n\nmodel AdminLog {\n  id        String   @id @default(cuid())\n  action    String\n  detail    String?\n  createdAt DateTime @default(now())\n}\n\nmodel Video {\n  id        String   @id @default(cuid())\n  title     String\n  youtubeUrl String   // full YouTube URL or video ID\n  description String?\n  isActive  Boolean  @default(true)\n  sortOrder Int      @default(0)\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n\nmodel SongRequest {\n  id        String   @id @default(cuid())\n  listenerName String?\n  message   String\n  type      String   @default(\"request\") // request, greeting, message\n  isRead    Boolean  @default(false)\n  createdAt DateTime @default(now())\n}</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/prisma/schema.prisma",
+    "usage": {
+      "tokens": 453
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 453
+    }
+  },
+  "status": 20000
+}

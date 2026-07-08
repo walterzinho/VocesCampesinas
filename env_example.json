@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\"># Database (SQLite - relative to prisma folder)\nDATABASE_URL=\"file:./dev.db\"\n\n# Admin password (change this!)\nADMIN_PASSWORD=cambia-esta-contrasena\n\n# Optional: Stream URL override\n# STREAM_URL=https://emisora.vocescampesinas.co/listen/vocescampesinas/radio.mp3</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/.env.example",
+    "usage": {
+      "tokens": 114
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 114
+    }
+  },
+  "status": 20000
+}

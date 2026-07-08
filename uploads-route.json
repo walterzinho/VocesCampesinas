@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">import { NextRequest, NextResponse } from 'next/server';\nimport { readFile, stat } from 'fs/promises';\nimport path from 'path';\n\nconst UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');\n\n// MIME type mapping\nconst MIME_TYPES: Record<string, string> = {\n  '.jpg': 'image/jpeg',\n  '.jpeg': 'image/jpeg',\n  '.png': 'image/png',\n  '.gif': 'image/gif',\n  '.webp': 'image/webp',\n  '.svg': 'image/svg+xml',\n  '.mp3': 'audio/mpeg',\n  '.mp4': 'video/mp4',\n};\n\nexport async function GET(\n  request: NextRequest,\n  { params }: { params: Promise<{ filename: string[] }> }\n) {\n  try {\n    const { filename: segments } = await params;\n    const filename = segments.join('/');\n\n    // Prevent directory traversal\n    const resolved = path.resolve(UPLOADS_DIR, filename);\n    if (!resolved.startsWith(UPLOADS_DIR)) {\n      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });\n    }\n\n    const filePath = path.join(UPLOADS_DIR, filename);\n\n    // Check file exists\n    const fileStat = await stat(filePath).catch(() => null);\n    if (!fileStat || !fileStat.isFile()) {\n      return NextResponse.json({ error: 'File not found' }, { status: 404 });\n    }\n\n    const fileBuffer = await readFile(filePath);\n    const ext = path.extname(filename).toLowerCase();\n    const contentType = MIME_TYPES[ext] || 'application/octet-stream';\n\n    return new NextResponse(fileBuffer, {\n      headers: {\n        'Content-Type': contentType,\n        'Content-Length': fileBuffer.length.toString(),\n        'Cache-Control': 'public, max-age=31536000, immutable',\n        'Access-Control-Allow-Origin': '*',\n      },\n    });\n  } catch {\n    return NextResponse.json({ error: 'Error serving file' }, { status: 500 });\n  }\n}</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/src/app/api/uploads/[...filename]/route.ts",
+    "usage": {
+      "tokens": 465
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 465
+    }
+  },
+  "status": 20000
+}

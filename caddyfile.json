@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">:81 {\n\t@transform_port_query {\n\t\tquery XTransformPort=*\n\t}\n\n\thandle @transform_port_query {\n\t\treverse_proxy localhost:{query.XTransformPort} {\n\t\t\theader_up Host {host}\n\t\t\theader_up X-Forwarded-For {remote_host}\n\t\t\theader_up X-Forwarded-Proto {scheme}\n\t\t\theader_up X-Real-IP {remote_host}\n\t\t}\n\t}\n\n\thandle {\n\t\treverse_proxy localhost:3000 {\n\t\t\theader_up Host {host}\n\t\t\theader_up X-Forwarded-For {remote_host}\n\t\t\theader_up X-Forwarded-Proto {scheme}\n\t\t\theader_up X-Real-IP {remote_host}\n\t\t}\n\t}\n}\n</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/walterzinho/VocesCampesinas/main/Caddyfile",
+    "usage": {
+      "tokens": 188
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 188
+    }
+  },
+  "status": 20000
+}
