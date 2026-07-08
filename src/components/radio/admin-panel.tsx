@@ -237,6 +237,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.success('Imagen subida');
     }
     setUploadingImage(false);
+    e.target.value = '';
   };
 
   const handleMessageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,6 +250,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.success('Imagen subida');
     }
     setUploadingMsgImage(false);
+    e.target.value = '';
   };
 
   const handleOffAirImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,6 +265,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.success('Imagen de fuera de aire actualizada');
     }
     setUploadingOffAir(false);
+    e.target.value = '';
   };
 
   const saveSettingDirect = async (key: string, value: string) => {

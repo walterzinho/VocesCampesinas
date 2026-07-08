@@ -13,6 +13,7 @@ interface Program {
   startTime: string;
   endTime: string;
   genre: string | null;
+  imageUrl: string | null;
 }
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -180,6 +181,11 @@ export default function ScheduleView() {
                                 </div>
                               </div>
                               {prog.genre && <span className={`inline-block mt-1.5 text-[9px] px-2 py-0.5 rounded-full ${isLive ? 'bg-app-accent/20 text-app-accent' : 'bg-app-surface text-app-t3'}`}>{prog.genre}</span>}
+                              {prog.imageUrl && (
+                                <div className="mt-1.5 rounded-lg overflow-hidden h-20 bg-white/5">
+                                  <img src={prog.imageUrl} alt={prog.name} className="w-full h-full object-cover" />
+                                </div>
+                              )}
                             </div>
                           );
                         })}
