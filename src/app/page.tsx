@@ -310,7 +310,7 @@ export default function HomePage() {
                   <span className="text-[9px] font-bold text-app-accent/70 uppercase tracking-wider">Ahora suena</span>
                 </div>
                 <h3 className="text-lg font-bold text-app-accent leading-tight">{settings.offAirName || 'Música de la Tierrita'}</h3>
-                <p className="text-[11px] text-white/40">La mejor selección musical campesina</p>
+                <p className="text-[11px] text-white/40">{settings.offAirSlogan || ''}</p>
               </>
             )}
 

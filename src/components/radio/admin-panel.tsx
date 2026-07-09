@@ -59,6 +59,7 @@ interface AppSettings {
   primaryColor: string;
   darkColor: string;
   blogUrl: string;
+  offAirSlogan: string;
   offAirName: string;
   offAirImageUrl: string;
 }
@@ -98,6 +99,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     facebookUrl: '', instagramUrl: '', whatsappUrl: '',
     youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#e48d2a', darkColor: '#17202A',
+    blogUrl: '', offAirSlogan: '', offAirName: '', offAirImageUrl: '',
   });
   const [offAirImage, setOffAirImage] = useState('');
   const [uploadingOffAir, setUploadingOffAir] = useState(false);
@@ -1171,6 +1173,17 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     className="bg-white/5 border-white/10 text-white text-xs"
                   />
                   <p className="text-[9px] text-white/25 mt-0.5">Se muestra cuando no hay programa al aire</p>
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Eslogan fuera de aire</label>
+                  <Input
+                    value={settings.offAirSlogan || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, offAirSlogan: e.target.value }))}
+                    onBlur={() => saveSetting('offAirSlogan', settings.offAirSlogan || '')}
+                    placeholder="La mejor selección musical campesina"
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                  <p className="text-[9px] text-white/25 mt-0.5">Descripción que aparece bajo el nombre</p>
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo (fuera de aire)</label>
