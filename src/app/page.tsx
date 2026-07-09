@@ -158,6 +158,39 @@ export default function HomePage() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  // Track PWA installations via standalone display mode
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as any).standalone === true;
+
+    if (!isStandalone) return;
+
+    // Get or create device ID
+    let deviceId = localStorage.getItem('vc-device-id');
+    if (!deviceId) {
+      deviceId = 'vc-' + Date.now() + '-' + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem('vc-device-id', deviceId);
+    }
+
+    // Register device (fire-and-forget, upsert updates lastSeenAt)
+    fetch('/api/devices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId }),
+    }).catch(() => { /* silent */ });
+
+    // Also register periodically (every 5 min) to keep lastSeenAt fresh
+    const interval = setInterval(() => {
+      fetch('/api/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId }),
+      }).catch(() => { /* silent */ });
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();

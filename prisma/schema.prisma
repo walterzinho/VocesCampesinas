@@ -66,3 +66,12 @@ model SongRequest {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model Device {
+  id          String   @id @default(cuid())
+  deviceId    String   @unique
+  platform    String?  // "android", "ios", "windows", "macos", "linux", "other"
+  userAgent   String?
+  lastSeenAt  DateTime @default(now())
+  installedAt DateTime @default(now())
+}
