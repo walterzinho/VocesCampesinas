@@ -182,6 +182,8 @@ export default function HomePage() {
   if (view === 'admin') {
     return (
       <div className="relative w-full h-dvh overflow-hidden flex flex-col bg-app-bg" data-theme={theme}>
+      {/* Desktop: constrain to phone width & center */}
+      <div className="max-w-lg mx-auto w-full h-full flex flex-col relative">
         {!isOnline && (
           <div className="absolute top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs py-1.5 flex items-center justify-center gap-1.5">
             <WifiOff className="w-3 h-3" /> Sin conexión a internet
@@ -235,12 +237,15 @@ export default function HomePage() {
         )}
 
         <style jsx global>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="relative w-full h-dvh overflow-hidden flex flex-col bg-app-bg" data-theme={theme}>
+      {/* Desktop: constrain to phone width & center */}
+      <div className="max-w-lg mx-auto w-full h-full flex flex-col relative">
       {/* Offline indicator */}
       {!isOnline && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs py-1.5 flex items-center justify-center gap-1.5">
@@ -417,6 +422,7 @@ export default function HomePage() {
       </nav>
 
       <style jsx global>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
+      </div>
     </div>
   );
 }
