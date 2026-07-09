@@ -1298,6 +1298,45 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
             </div>
 
             <div>
+              <h3 className="text-sm font-semibold text-white/70 mb-3">Notificaciones Telegram</h3>
+              <p className="text-[10px] text-white/30 mb-2">Recibe alertas de peticiones, saludos y dedicaciones en tu Telegram.</p>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Token del Bot</label>
+                  <Input
+                    value={(settings as any).telegramBotToken || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, telegramBotToken: e.target.value }))}
+                    onBlur={() => saveSetting('telegramBotToken', (settings as any).telegramBotToken || '')}
+                    placeholder="123456:ABC-DEF..."
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Chat ID</label>
+                  <Input
+                    value={(settings as any).telegramChatId || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, telegramChatId: e.target.value }))}
+                    onBlur={() => saveSetting('telegramChatId', (settings as any).telegramChatId || '')}
+                    placeholder="-1001234567890"
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    const res = await fetch('/api/requests/test-telegram', {
+                      headers: { 'Authorization': `Bearer ${password}` },
+                    });
+                    if (res.ok) toast.success('Notificación de prueba enviada');
+                    else toast.error('Error al enviar prueba. Verifica token y chat ID.');
+                  }}
+                  className="text-[10px] px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors"
+                >
+                  Enviar notificación de prueba
+                </button>
+              </div>
+            </div>
+
+            <div>
               <h3 className="text-sm font-semibold text-white/70 mb-3">Seguridad</h3>
               <div>
                 <label className="text-[10px] text-white/40 mb-1 block">Cambiar Contraseña de Admin</label>

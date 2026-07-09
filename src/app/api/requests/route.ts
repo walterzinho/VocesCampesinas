@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 async function verifyAdmin(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -26,6 +27,19 @@ export async function POST(request: NextRequest) {
         message: message.trim(),
         type: type || 'request',
       },
+    });
+
+    // Send Telegram notification (fire-and-forget, don't block response)
+    const typeLabels: Record<string, string> = {
+      request: 'Petición de canción',
+      greeting: 'Saludo',
+      dedication: 'Dedicación',
+    };
+    const label = typeLabels[type || 'request'] || 'Mensaje';
+    const namePart = listenerName ? `<b>De:</b> ${listenerName}\n` : '';
+    const time = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    sendTelegramNotification({
+      text: `🔔 <b>${label}</b>\n\n${namePart}<b>Mensaje:</b> ${message.trim()}\n\n🕐 ${time}`,
     });
 
     return NextResponse.json({ success: true, id: songRequest.id }, { status: 201 });
