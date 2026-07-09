@@ -8,7 +8,7 @@ import SongRequestForm from '@/components/radio/song-request-form';
 import BlogSection from '@/components/radio/blog-section';
 import VideoSection from '@/components/radio/video-section';
 import AdminPanel from '@/components/radio/admin-panel';
-import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon } from 'lucide-react';
+import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface StationSettings {
@@ -59,6 +59,8 @@ export default function HomePage() {
   const [isOnline, setIsOnline] = useState(true);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
 
   // Load theme from localStorage
   useEffect(() => {
@@ -190,6 +192,73 @@ export default function HomePage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Push notifications: check support and current status
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    setPushSupported(true);
+
+    // Check if already subscribed
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      setPushEnabled(!!sub);
+    }).catch(() => {});
+  }, []);
+
+  const togglePush = async () => {
+    if (!pushSupported) return;
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+
+      if (pushEnabled) {
+        // Unsubscribe
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          await fetch('/api/push/subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          }).catch(() => {});
+        }
+        setPushEnabled(false);
+        return;
+      }
+
+      // Check if VAPID is configured
+      const vapidRes = await fetch('/api/push/vapid-key');
+      const vapidData = await vapidRes.json();
+      if (!vapidData.configured) return; // Not configured yet, do nothing
+
+      // Request permission
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      // Subscribe
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidData.key,
+      });
+
+      // Send subscription to server
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          keys: {
+            auth: subscription.getKey('auth') ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))) : '',
+            p256dh: subscription.getKey('p256dh') ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))) : '',
+          },
+        }),
+      });
+
+      setPushEnabled(true);
+    } catch (error) {
+      console.error('Error toggle push:', error);
+    }
+  };
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
@@ -426,6 +495,16 @@ export default function HomePage() {
               <button onClick={handleShare} className="w-9 h-9 rounded-full bg-app-surface border border-app-bdr flex items-center justify-center hover:bg-app-surface-h transition-all" aria-label="Compartir">
                 <Share2 className="w-3.5 h-3.5 text-app-t2" />
               </button>
+              {pushSupported && (
+                <button
+                  onClick={togglePush}
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${pushEnabled ? 'bg-[#e48d2a]/20 border-[#e48d2a]/30 text-[#e48d2a]' : 'bg-app-surface border-app-bdr text-app-t2 hover:bg-app-surface-h'}`}
+                  aria-label={pushEnabled ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+                  title={pushEnabled ? 'Notificaciones activadas' : 'Activar notificaciones'}
+                >
+                  {pushEnabled ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+                </button>
+              )}
             </div>
           </motion.main>
         )}

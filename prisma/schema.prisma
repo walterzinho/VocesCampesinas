@@ -75,3 +75,11 @@ model Device {
   lastSeenAt  DateTime @default(now())
   installedAt DateTime @default(now())
 }
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  keysAuth  String
+  keysP256dh String
+  createdAt DateTime @default(now())
+}
