@@ -10,6 +10,7 @@ RUN bun install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 ENV DATABASE_URL="file:./dev.db"
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -18,7 +19,7 @@ RUN bunx prisma generate
 # Create the database with schema during build
 RUN bunx prisma db push --skip-generate --accept-data-loss
 # Build Next.js
-RUN bun run build
+RUN NODE_OPTIONS="--max-old-space-size=1024" bun run build
 
 # --- Production ---
 FROM base AS runner
