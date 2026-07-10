@@ -26,6 +26,7 @@ interface Program {
   genre: string | null;
   sortOrder: number;
   imageUrl: string | null;
+  playerImageUrl: string | null;
 }
 
 interface Message {
@@ -60,6 +61,7 @@ interface AppSettings {
   darkColor: string;
   blogUrl: string;
   offAirName: string;
+  offAirSlogan: string;
   offAirImageUrl: string;
 }
 
@@ -194,6 +196,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   // Image upload handler
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingPlayerImage, setUploadingPlayerImage] = useState(false);
   const [uploadingMsgImage, setUploadingMsgImage] = useState(false);
   const uploadFile = async (file: File, field: string): Promise<string | null> => {
     if (file.size > 5 * 1024 * 1024) {
@@ -234,9 +237,21 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     const url = await uploadFile(file, 'program');
     if (url) {
       setEditingProgram(prev => ({ ...prev, imageUrl: url }));
-      toast.success('Imagen subida');
+      toast.success('Imagen de programación subida');
     }
     setUploadingImage(false);
+  };
+
+  const handlePlayerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPlayerImage(true);
+    const url = await uploadFile(file, 'program-player');
+    if (url) {
+      setEditingProgram(prev => ({ ...prev, playerImageUrl: url }));
+      toast.success('Imagen del reproductor subida');
+    }
+    setUploadingPlayerImage(false);
   };
 
   const handleMessageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -296,6 +311,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       isActive: editingProgram.isActive ?? true,
       sortOrder: editingProgram.sortOrder ?? 0,
       imageUrl: editingProgram.imageUrl || '',
+      playerImageUrl: editingProgram.playerImageUrl || '',
     };
 
     try {
@@ -744,13 +760,14 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                         className="bg-white/5 border-white/10 text-white text-xs"
                       />
                     </div>
-                    {/* Image Upload */}
+                    {/* Image Upload - Programación (1:1) */}
                     <div>
-                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo</label>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de programación (1:1 - logo del programa)</label>
                       <div className="flex items-center gap-2">
                         <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                           <span className="text-xs text-white/50 truncate">
-                            {editingProgram.imageUrl || 'Seleccionar imagen...'}
+                            {editingProgram.imageUrl || 'Seleccionar imagen 1:1...'}
                           </span>
                           <input
                             type="file"
@@ -773,8 +790,43 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                         )}
                       </div>
                       {editingProgram.imageUrl && (
-                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
+                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 w-16 bg-white/5">
                           <img src={editingProgram.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.imageUrl.slice('/uploads'.length)}` : editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Image Upload - Reproductor (horizontal) */}
+                    <div>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen del reproductor (horizontal - En Vivo)</label>
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                          <Play className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                          <span className="text-xs text-white/50 truncate">
+                            {editingProgram.playerImageUrl || 'Seleccionar imagen horizontal...'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePlayerImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {uploadingPlayerImage && (
+                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+                        )}
+                        {editingProgram.playerImageUrl && (
+                          <button
+                            onClick={() => setEditingProgram(prev => ({ ...prev, playerImageUrl: '' }))}
+                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+                            title="Quitar imagen"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      {editingProgram.playerImageUrl && (
+                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 w-28 bg-white/5">
+                          <img src={editingProgram.playerImageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.playerImageUrl.slice('/uploads'.length)}` : editingProgram.playerImageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
                     </div>
@@ -1168,6 +1220,17 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     className="bg-white/5 border-white/10 text-white text-xs"
                   />
                   <p className="text-[9px] text-white/25 mt-0.5">Se muestra cuando no hay programa al aire</p>
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Eslogan fuera de aire</label>
+                  <Input
+                    value={settings.offAirSlogan || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, offAirSlogan: e.target.value }))}
+                    onBlur={() => saveSetting('offAirSlogan', settings.offAirSlogan || '')}
+                    placeholder="La mejor selección musical campesina"
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                  <p className="text-[9px] text-white/25 mt-0.5">Texto secundario cuando no hay programa al aire</p>
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo (fuera de aire)</label>

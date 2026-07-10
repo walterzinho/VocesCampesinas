@@ -1,0 +1,502 @@
+   600→   600→              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center">{unreadRequests}</span>
+   601→   601→            )}
+   602→   602→          </div>
+   603→   603→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   604→   604→            <p className="text-2xl font-bold text-[#e48d2a]">{logs.length}</p>
+   605→   605→            <p className="text-[10px] text-white/40">Actividad</p>
+   606→   606→          </div>
+   607→   607→        </div>
+   608→   608→
+   609→   609→        <Tabs defaultValue="programs" className="w-full">
+   610→   610→          <TabsList className="w-full bg-white/5 border border-white/10 rounded-xl h-auto p-1">
+   611→   611→            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   612→   612→              <Clock className="w-3.5 h-3.5 mr-1" /> Programación
+   613→   613→            </TabsTrigger>
+   614→   614→            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   615→   615→              <Bell className="w-3.5 h-3.5 mr-1" /> Información
+   616→   616→            </TabsTrigger>
+   617→   617→            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg relative">
+   618→   618→              <Send className="w-3.5 h-3.5 mr-1" /> Peticiones
+   619→   619→              {unreadRequests > 0 && (
+   620→   620→                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full">{unreadRequests}</span>
+   621→   621→              )}
+   622→   622→            </TabsTrigger>
+   623→   623→            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   624→   624→              <Settings className="w-3.5 h-3.5 mr-1" /> Config
+   625→   625→            </TabsTrigger>
+   626→   626→            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   627→   627→              <Play className="w-3.5 h-3.5 mr-1" /> Videos
+   628→   628→            </TabsTrigger>
+   629→   629→          </TabsList>
+   630→   630→
+   631→   631→          {/* PROGRAMS TAB */}
+   632→   632→          <TabsContent value="programs" className="mt-4">
+   633→   633→            <div className="flex items-center justify-between mb-3">
+   634→   634→              <h3 className="text-sm font-semibold text-white/70">Todos los Programas</h3>
+   635→   635→              <Dialog open={programDialog} onOpenChange={setProgramDialog}>
+   636→   636→                <DialogTrigger asChild>
+   637→   637→                  <Button
+   638→   638→                    size="sm"
+   639→   639→                    onClick={openNewProgram}
+   640→   640→                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+   641→   641→                  >
+   642→   642→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   643→   643→                  </Button>
+   644→   644→                </DialogTrigger>
+   645→   645→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
+   646→   646→                  <DialogHeader>
+   647→   647→                    <DialogTitle className="text-white">
+   648→   648→                      {isEditingExisting ? 'Editar Programa' : 'Nuevo Programa'}
+   649→   649→                    </DialogTitle>
+   650→   650→                  </DialogHeader>
+   651→   651→                  <div className="space-y-3 mt-2">
+   652→   652→                    <Input
+   653→   653→                      placeholder="Nombre del programa *"
+   654→   654→                      value={editingProgram.name || ''}
+   655→   655→                      onChange={e => setEditingProgram(prev => ({ ...prev, name: e.target.value }))}
+   656→   656→                      className="bg-white/5 border-white/10 text-white"
+   657→   657→                    />
+   658→   658→                    <Input
+   659→   659→                      placeholder="Conductor"
+   660→   660→                      value={editingProgram.host || ''}
+   661→   661→                      onChange={e => setEditingProgram(prev => ({ ...prev, host: e.target.value }))}
+   662→   662→                      className="bg-white/5 border-white/10 text-white"
+   663→   663→                    />
+   664→   664→                    <Textarea
+   665→   665→                      placeholder="Descripción"
+   666→   666→                      value={editingProgram.description || ''}
+   667→   667→                      onChange={e => setEditingProgram(prev => ({ ...prev, description: e.target.value }))}
+   668→   668→                      className="bg-white/5 border-white/10 text-white min-h-[60px]"
+   669→   669→                    />
+   670→   670→
+   671→   671→                    {/* Day Selection with Quick Selects */}
+   672→   672→                    <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+   673→   673→                      <label className="text-xs text-white/60 font-medium mb-2 block">Días de emisión *</label>
+   674→   674→
+   675→   675→                      {/* Quick select buttons */}
+   676→   676→                      <div className="flex gap-1.5 mb-3">
+   677→   677→                        <button
+   678→   678→                          type="button"
+   679→   679→                          onClick={toggleAllDays}
+   680→   680→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   681→   681→                            isQuickActive([0, 1, 2, 3, 4, 5, 6])
+   682→   682→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   683→   683→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   684→   684→                          }`}
+   685→   685→                        >
+   686→   686→                          Todos
+   687→   687→                        </button>
+   688→   688→                        <button
+   689→   689→                          type="button"
+   690→   690→                          onClick={setWeekdays}
+   691→   691→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   692→   692→                            isQuickActive([1, 2, 3, 4, 5])
+   693→   693→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   694→   694→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   695→   695→                          }`}
+   696→   696→                        >
+   697→   697→                          Lun - Vie
+   698→   698→                        </button>
+   699→   699→                        <button
+   700→   700→                          type="button"
+   701→   701→                          onClick={setWeekend}
+   702→   702→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   703→   703→                            isQuickActive([0, 6])
+   704→   704→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   705→   705→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   706→   706→                          }`}
+   707→   707→                        >
+   708→   708→                          Fin de Semana
+   709→   709→                        </button>
+   710→   710→                      </div>
+   711→   711→
+   712→   712→                      {/* Individual day buttons */}
+   713→   713→                      <div className="grid grid-cols-7 gap-1">
+   714→   714→                        {DAY_NAMES.map((day, idx) => (
+   715→   715→                          <button
+   716→   716→                            key={idx}
+   717→   717→                            type="button"
+   718→   718→                            onClick={() => toggleDay(idx)}
+   719→   719→                            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-all border ${
+   720→   720→                              selectedDays.includes(idx)
+   721→   721→                                ? 'bg-[#e48d2a]/15 border-[#e48d2a]/40 text-[#e48d2a]'
+   722→   722→                                : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'
+   723→   723→                            }`}
+   724→   724→                          >
+   725→   725→                            {selectedDays.includes(idx) && <Check className="w-3 h-3" />}
+   726→   726→                            <span>{day}</span>
+   727→   727→                          </button>
+   728→   728→                        ))}
+   729→   729→                      </div>
+   730→   730→
+   731→   731→                      {selectedDays.length > 0 && (
+   732→   732→                        <p className="text-[10px] text-white/25 mt-2 text-center">
+   733→   733→                          Se creará {selectedDays.length === 1 ? '1 entrada' : `${selectedDays.length} entradas`} — {selectedDays.map(d => DAY_FULL_NAMES[d]).join(', ')}
+   734→   734→                        </p>
+   735→   735→                      )}
+   736→   736→                    </div>
+   737→   737→
+   738→   738→                    <div>
+   739→   739→                      <label className="text-[10px] text-white/40 mb-1 block">Género</label>
+   740→   740→                      <Input
+   741→   741→                        placeholder="Ej: Folclor"
+   742→   742→                        value={editingProgram.genre || ''}
+   743→   743→                        onChange={e => setEditingProgram(prev => ({ ...prev, genre: e.target.value }))}
+   744→   744→                        className="bg-white/5 border-white/10 text-white text-xs"
+   745→   745→                      />
+   746→   746→                    </div>
+   747→   747→                    {/* Image Upload */}
+   748→   748→                    <div>
+   749→   749→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo</label>
+   750→   750→                      <div className="flex items-center gap-2">
+   751→   751→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   752→   752→                          <span className="text-xs text-white/50 truncate">
+   753→   753→                            {editingProgram.imageUrl || 'Seleccionar imagen...'}
+   754→   754→                          </span>
+   755→   755→                          <input
+   756→   756→                            type="file"
+   757→   757→                            accept="image/*"
+   758→   758→                            onChange={handleImageUpload}
+   759→   759→                            className="hidden"
+   760→   760→                          />
+   761→   761→                        </label>
+   762→   762→                        {uploadingImage && (
+   763→   763→                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+   764→   764→                        )}
+   765→   765→                        {editingProgram.imageUrl && (
+   766→   766→                          <button
+   767→   767→                            onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))}
+   768→   768→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   769→   769→                            title="Quitar imagen"
+   770→   770→                          >
+   771→   771→                            <X className="w-3.5 h-3.5" />
+   772→   772→                          </button>
+   773→   773→                        )}
+   774→   774→                      </div>
+   775→   775→                      {editingProgram.imageUrl && (
+   776→   776→                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
+   777→   777→                          <img src={editingProgram.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.imageUrl.slice('/uploads'.length)}` : editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   778→   778→                        </div>
+   779→   779→                      )}
+   780→   780→                    </div>
+   781→   781→                    <div className="grid grid-cols-2 gap-3">
+   782→   782→                      <div>
+   783→   783→                        <label className="text-[10px] text-white/40 mb-1 block">Hora inicio *</label>
+   784→   784→                        <Input
+   785→   785→                          type="time"
+   786→   786→                          value={editingProgram.startTime || ''}
+   787→   787→                          onChange={e => setEditingProgram(prev => ({ ...prev, startTime: e.target.value }))}
+   788→   788→                          className="bg-white/5 border-white/10 text-white text-xs"
+   789→   789→                        />
+   790→   790→                      </div>
+   791→   791→                      <div>
+   792→   792→                        <label className="text-[10px] text-white/40 mb-1 block">Hora fin *</label>
+   793→   793→                        <Input
+   794→   794→                          type="time"
+   795→   795→                          value={editingProgram.endTime || ''}
+   796→   796→                          onChange={e => setEditingProgram(prev => ({ ...prev, endTime: e.target.value }))}
+   797→   797→                          className="bg-white/5 border-white/10 text-white text-xs"
+   798→   798→                        />
+   799→   799→                      </div>
+   800→   800→                    </div>
+   801→   801→                    <div className="flex items-center gap-2">
+   802→   802→                      <Switch
+   803→   803→                        checked={editingProgram.isActive ?? true}
+   804→   804→                        onCheckedChange={v => setEditingProgram(prev => ({ ...prev, isActive: v }))}
+   805→   805→                      />
+   806→   806→                      <span className="text-xs text-white/60">Programa activo</span>
+   807→   807→                    </div>
+   808→   808→                    <Button onClick={saveProgram} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+   809→   809→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   810→   810→                    </Button>
+   811→   811→                  </div>
+   812→   812→                </DialogContent>
+   813→   813→              </Dialog>
+   814→   814→            </div>
+   815→   815→
+   816→   816→            <div className="space-y-3 max-h-[500px] overflow-y-auto hide-scrollbar">
+   817→   817→              {Object.keys(groupedPrograms).length === 0 ? (
+   818→   818→                <p className="text-center text-white/30 text-sm py-8">No hay programas creados</p>
+   819→   819→              ) : (
+   820→   820→                Object.entries(groupedPrograms).map(([name, progs]) => {
+   821→   821→                  const firstProg = progs[0];
+   822→   822→                  const dayCount = progs.length;
+   823→   823→                  const allDays = progs.every(p => p.isActive);
+   824→   824→                  const dayLabels = progs
+   825→   825→                    .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+   826→   826→                    .map(p => DAY_NAMES[p.dayOfWeek]);
+   827→   827→
+   828→   828→                  return (
+   829→   829→                    <div key={name} className={`p-3 rounded-xl border transition-all ${allDays ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   830→   830→                      <div className="flex items-start justify-between">
+   831→   831→                        <div className="flex-1 min-w-0">
+   832→   832→                          <div className="flex items-center gap-2 flex-wrap">
+   833→   833→                            <h4 className="text-sm font-semibold text-white truncate">{name}</h4>
+   834→   834→                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+   835→   835→                              dayCount === 7
+   836→   836→                                ? 'bg-[#e48d2a]/20 text-[#e48d2a]'
+   837→   837→                                : 'bg-white/10 text-white/40'
+   838→   838→                            }`}>
+   839→   839→                              {dayCount === 7 ? 'Todos los días' : dayLabels.join(' · ')}
+   840→   840→                            </span>
+   841→   841→                          </div>
+   842→   842→                          <p className="text-[11px] text-white/40 mt-0.5">
+   843→   843→                            {firstProg.startTime} - {firstProg.endTime}
+   844→   844→                            {firstProg.host && ` | ${firstProg.host}`}
+   845→   845→                            {firstProg.genre && ` | ${firstProg.genre}`}
+   846→   846→                          </p>
+   847→   847→                        </div>
+   848→   848→                        <div className="flex items-center gap-1">
+   849→   849→                          <Switch
+   850→   850→                            checked={allDays}
+   851→   851→                            onCheckedChange={() => toggleProgramActive(firstProg)}
+   852→   852→                            className="scale-75"
+   853→   853→                          />
+   854→   854→                          <Button
+   855→   855→                            variant="ghost"
+   856→   856→                            size="sm"
+   857→   857→                            onClick={() => openEditProgram(firstProg)}
+   858→   858→                            className="h-7 w-7 p-0 text-white/40 hover:text-white"
+   859→   859→                            title="Editar"
+   860→   860→                          >
+   861→   861→                            <Settings className="w-3.5 h-3.5" />
+   862→   862→                          </Button>
+   863→   863→                          <Button
+   864→   864→                            variant="ghost"
+   865→   865→                            size="sm"
+   866→   866→                            onClick={() => deleteProgram(firstProg.id, name)}
+   867→   867→                            className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+   868→   868→                            title="Eliminar"
+   869→   869→                          >
+   870→   870→                            <Trash2 className="w-3.5 h-3.5" />
+   871→   871→                          </Button>
+   872→   872→                        </div>
+   873→   873→                      </div>
+   874→   874→                    </div>
+   875→   875→                  );
+   876→   876→                })
+   877→   877→              )}
+   878→   878→            </div>
+   879→   879→          </TabsContent>
+   880→   880→
+   881→   881→          {/* MESSAGES TAB (renamed to Información) */}
+   882→   882→          <TabsContent value="messages" className="mt-4">
+   883→   883→            <div className="flex items-center justify-between mb-3">
+   884→   884→              <h3 className="text-sm font-semibold text-white/70">Información y Anuncios</h3>
+   885→   885→              <Dialog open={messageDialog} onOpenChange={setMessageDialog}>
+   886→   886→                <DialogTrigger asChild>
+   887→   887→                  <Button
+   888→   888→                    size="sm"
+   889→   889→                    onClick={() => setEditingMessage({ type: 'info', priority: 0, isActive: true })}
+   890→   890→                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+   891→   891→                  >
+   892→   892→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   893→   893→                  </Button>
+   894→   894→                </DialogTrigger>
+   895→   895→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
+   896→   896→                  <DialogHeader>
+   897→   897→                    <DialogTitle className="text-white">
+   898→   898→                      {editingMessage.id ? 'Editar Información' : 'Nueva Información'}
+   899→   899→                    </DialogTitle>
+   900→   900→                  </DialogHeader>
+   901→   901→                  <div className="space-y-3 mt-2">
+   902→   902→                    <Textarea
+   903→   903→                      placeholder="Contenido del mensaje *"
+   904→   904→                      value={editingMessage.content || ''}
+   905→   905→                      onChange={e => setEditingMessage(prev => ({ ...prev, content: e.target.value }))}
+   906→   906→                      className="bg-white/5 border-white/10 text-white min-h-[80px]"
+   907→   907→                    />
+   908→   908→                    <div className="grid grid-cols-2 gap-3">
+   909→   909→                      <div>
+   910→   910→                        <label className="text-[10px] text-white/40 mb-1 block">Tipo</label>
+   911→   911→                        <Select
+   912→   912→                          value={editingMessage.type || 'info'}
+   913→   913→                          onValueChange={v => setEditingMessage(prev => ({ ...prev, type: v }))}
+   914→   914→                        >
+   915→   915→                          <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
+   916→   916→                            <SelectValue />
+   917→   917→                          </SelectTrigger>
+   918→   918→                          <SelectContent className="bg-[#1a2332] border-white/10">
+   919→   919→                            <SelectItem value="info" className="text-white text-xs">Información</SelectItem>
+   920→   920→                            <SelectItem value="alert" className="text-white text-xs">Alerta</SelectItem>
+   921→   921→                            <SelectItem value="promotion" className="text-white text-xs">Promoción</SelectItem>
+   922→   922→                          </SelectContent>
+   923→   923→                        </Select>
+   924→   924→                      </div>
+   925→   925→                      <div>
+   926→   926→                        <label className="text-[10px] text-white/40 mb-1 block">Prioridad (0-10)</label>
+   927→   927→                        <Input
+   928→   928→                          type="number"
+   929→   929→                          min="0"
+   930→   930→                          max="10"
+   931→   931→                          value={editingMessage.priority ?? 0}
+   932→   932→                          onChange={e => setEditingMessage(prev => ({ ...prev, priority: parseInt(e.target.value) || 0 }))}
+   933→   933→                          className="bg-white/5 border-white/10 text-white text-xs"
+   934→   934→                        />
+   935→   935→                      </div>
+   936→   936→                    </div>
+   937→   937→                    {/* Image Upload for message */}
+   938→   938→                    <div>
+   939→   939→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen (1:1 recomendado)</label>
+   940→   940→                      <div className="flex items-center gap-2">
+   941→   941→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   942→   942→                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+   943→   943→                          <span className="text-xs text-white/50 truncate">
+   944→   944→                            {editingMessage.imageUrl
+   945→   945→                              ? editingMessage.imageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '')
+   946→   946→                              : 'Seleccionar imagen...'}
+   947→   947→                          </span>
+   948→   948→                          <input
+   949→   949→                            type="file"
+   950→   950→                            accept="image/*"
+   951→   951→                            onChange={handleMessageImageUpload}
+   952→   952→                            className="hidden"
+   953→   953→                          />
+   954→   954→                        </label>
+   955→   955→                        {uploadingMsgImage && (
+   956→   956→                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+   957→   957→                        )}
+   958→   958→                        {editingMessage.imageUrl && (
+   959→   959→                          <button
+   960→   960→                            onClick={() => setEditingMessage(prev => ({ ...prev, imageUrl: '' }))}
+   961→   961→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   962→   962→                            title="Quitar imagen"
+   963→   963→                          >
+   964→   964→                            <X className="w-3.5 h-3.5" />
+   965→   965→                          </button>
+   966→   966→                        )}
+   967→   967→                      </div>
+   968→   968→                      {editingMessage.imageUrl && (
+   969→   969→                        <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+   970→   970→                          <img src={editingMessage.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingMessage.imageUrl.slice('/uploads'.length)}` : editingMessage.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   971→   971→                        </div>
+   972→   972→                      )}
+   973→   973→                    </div>
+   974→   974→                    <div className="flex items-center gap-2">
+   975→   975→                      <Switch
+   976→   976→                        checked={editingMessage.isActive ?? true}
+   977→   977→                        onCheckedChange={v => setEditingMessage(prev => ({ ...prev, isActive: v }))}
+   978→   978→                      />
+   979→   979→                      <span className="text-xs text-white/60">Activo</span>
+   980→   980→                    </div>
+   981→   981→                    <Button onClick={saveMessage} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+   982→   982→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   983→   983→                    </Button>
+   984→   984→                  </div>
+   985→   985→                </DialogContent>
+   986→   986→              </Dialog>
+   987→   987→            </div>
+   988→   988→
+   989→   989→            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+   990→   990→              {messages.length === 0 ? (
+   991→   991→                <p className="text-center text-white/30 text-sm py-8">No hay mensajes de información</p>
+   992→   992→              ) : (
+   993→   993→                messages.map(msg => (
+   994→   994→                  <div key={msg.id} className={`p-3 rounded-xl border ${msg.isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   995→   995→                    <div className="flex items-start gap-3">
+   996→   996→                      {/* Thumbnail */}
+   997→   997→                      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+   998→   998→                        {msg.imageUrl ? (
+   999→   999→                          <img src={msg.imageUrl?.startsWith('/uploads/') ? `/api/uploads${msg.imageUrl.slice('/uploads'.length)}` : msg.imageUrl} alt="" className="w-full h-full object-cover" />
+  1000→  1000→                        ) : (
+  1001→  1001→                          <div className="w-full h-full flex items-center justify-center">
+  1002→  1002→                            <ImageIcon className="w-4 h-4 text-white/15" />
+  1003→  1003→                          </div>
+  1004→  1004→                        )}
+  1005→  1005→                      </div>
+  1006→  1006→                      <div className="flex-1 min-w-0">
+  1007→  1007→                        <p className="text-sm text-white line-clamp-2">{msg.content}</p>
+  1008→  1008→                        <div className="flex items-center gap-2 mt-1">
+  1009→  1009→                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+  1010→  1010→                            msg.type === 'info' ? 'bg-sky-500/10 text-sky-400' :
+  1011→  1011→                            msg.type === 'alert' ? 'bg-amber-500/10 text-amber-400' :
+  1012→  1012→                            'bg-[#e48d2a]/10 text-[#e48d2a]'
+  1013→  1013→                          }`}>
+  1014→  1014→                            {msg.type === 'info' ? 'Info' : msg.type === 'alert' ? 'Alerta' : 'Promo'}
+  1015→  1015→                          </span>
+  1016→  1016→                          <span className="text-[10px] text-white/30">Prioridad: {msg.priority}</span>
+  1017→  1017→                        </div>
+  1018→  1018→                      </div>
+  1019→  1019→                      <div className="flex items-center gap-1">
+  1020→  1020→                        <Switch
+  1021→  1021→                          checked={msg.isActive}
+  1022→  1022→                          onCheckedChange={async () => {
+  1023→  1023→                            await fetch('/api/messages', {
+  1024→  1024→                              method: 'PUT',
+  1025→  1025→                              headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+  1026→  1026→                              body: JSON.stringify({ id: msg.id, isActive: !msg.isActive }),
+  1027→  1027→                            });
+  1028→  1028→                            fetchAllData();
+  1029→  1029→                          }}
+  1030→  1030→                          className="scale-75"
+  1031→  1031→                        />
+  1032→  1032→                        <Button
+  1033→  1033→                          variant="ghost"
+  1034→  1034→                          size="sm"
+  1035→  1035→                          onClick={() => { setEditingMessage(msg); setMessageDialog(true); }}
+  1036→  1036→                          className="h-7 w-7 p-0 text-white/40 hover:text-white"
+  1037→  1037→                        >
+  1038→  1038→                          <Settings className="w-3.5 h-3.5" />
+  1039→  1039→                        </Button>
+  1040→  1040→                        <Button
+  1041→  1041→                          variant="ghost"
+  1042→  1042→                          size="sm"
+  1043→  1043→                          onClick={() => deleteMessage(msg.id)}
+  1044→  1044→                          className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+  1045→  1045→                        >
+  1046→  1046→                          <Trash2 className="w-3.5 h-3.5" />
+  1047→  1047→                        </Button>
+  1048→  1048→                      </div>
+  1049→  1049→                    </div>
+  1050→  1050→                  </div>
+  1051→  1051→                ))
+  1052→  1052→              )}
+  1053→  1053→            </div>
+  1054→  1054→          </TabsContent>
+  1055→  1055→
+  1056→  1056→          {/* SONG REQUESTS TAB */}
+  1057→  1057→          <TabsContent value="requests" className="mt-4">
+  1058→  1058→            <div className="flex items-center justify-between mb-3">
+  1059→  1059→              <h3 className="text-sm font-semibold text-white/70">
+  1060→  1060→                Peticiones y Mensajes de Oyentes
+  1061→  1061→              </h3>
+  1062→  1062→              {unreadRequests > 0 && (
+  1063→  1063→                <Button
+  1064→  1064→                  size="sm"
+  1065→  1065→                  variant="ghost"
+  1066→  1066→                  onClick={async () => {
+  1067→  1067→                    for (const r of songRequests.filter(r => !r.isRead)) {
+  1068→  1068→                      await markRequestRead(r.id, true);
+  1069→  1069→                    }
+  1070→  1070→                  }}
+  1071→  1071→                  className="text-xs text-[#e48d2a] hover:bg-[#e48d2a]/10"
+  1072→  1072→                >
+  1073→  1073→                  <Check className="w-3 h-3 mr-1" /> Marcar todo leído
+  1074→  1074→                </Button>
+  1075→  1075→              )}
+  1076→  1076→            </div>
+  1077→  1077→
+  1078→  1078→            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+  1079→  1079→              {songRequests.length === 0 ? (
+  1080→  1080→                <div className="text-center py-8">
+  1081→  1081→                  <Send className="w-10 h-10 mx-auto mb-2 text-white/20" />
+  1082→  1082→                  <p className="text-white/30 text-sm">No hay peticiones aún</p>
+  1083→  1083→                  <p className="text-white/20 text-xs mt-1">Los oyentes pueden enviar peticiones desde la app</p>
+  1084→  1084→                </div>
+  1085→  1085→              ) : (
+  1086→  1086→                songRequests.map(req => {
+  1087→  1087→                  const typeIcon = req.type === 'greeting' ? Heart : req.type === 'message' ? MessageSquare : Music;
+  1088→  1088→                  const TypeIcon = typeIcon;
+  1089→  1089→                  const typeLabel = req.type === 'greeting' ? 'Saludo' : req.type === 'message' ? 'Mensaje' : 'Petición';
+  1090→  1090→                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-[#e48d2a] bg-[#e48d2a]/10';
+  1091→  1091→
+  1092→  1092→                  return (
+  1093→  1093→                    <div key={req.id} className={`p-3 rounded-xl border transition-all ${!req.isRead ? 'bg-white/5 border-[#e48d2a]/20' : 'bg-white/[0.02] border-white/5'}`}>
+  1094→  1094→                      <div className="flex items-start gap-2">
+  1095→  1095→                        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${typeColor}`}>
+  1096→  1096→                          <TypeIcon className="w-3.5 h-3.5" />
+  1097→  1097→                        </div>
+  1098→  1098→                        <div className="flex-1 min-w-0">
+  1099→  1099→                          <div className="flex items-center gap-2 mb-0.5">
+
+[showing lines 600-1099 of 1500; use offset=1100 with limit to continue reading]

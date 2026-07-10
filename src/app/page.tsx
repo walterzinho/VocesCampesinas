@@ -25,6 +25,7 @@ interface StationSettings {
   darkColor: string;
   blogUrl: string;
   offAirName: string;
+  offAirSlogan: string;
   offAirImageUrl: string;
 }
 
@@ -36,6 +37,7 @@ interface Program {
   endTime: string;
   dayOfWeek: number;
   imageUrl?: string | null;
+  playerImageUrl?: string | null;
   isNextDay?: boolean;
 }
 
@@ -50,7 +52,7 @@ export default function HomePage() {
     stationSlogan: 'El Campo Nos Une',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '', youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#e48d2a', darkColor: '#17202A', blogUrl: '',
-    offAirName: 'Música de la Tierrita', offAirImageUrl: '',
+    offAirName: 'Música de la Tierrita', offAirSlogan: 'La mejor selección musical campesina', offAirImageUrl: '',
   });
   const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
   const [nextProgram, setNextProgram] = useState<Program | null>(null);
@@ -174,7 +176,8 @@ export default function HomePage() {
   };
 
   const backgroundImageUrl = useMemo(() => {
-    const raw = currentProgram?.imageUrl || settings.offAirImageUrl || '/api/uploads/musicatierrita.png';
+    // Prioridad: playerImageUrl del programa > offAirImageUrl > default
+    const raw = currentProgram?.playerImageUrl || settings.offAirImageUrl || '/api/uploads/musicatierrita.png';
     return raw.startsWith('/uploads/') ? `/api/uploads${raw.slice('/uploads'.length)}` : raw;
   }, [currentProgram, settings.offAirImageUrl]);
 
@@ -305,7 +308,7 @@ export default function HomePage() {
                   <span className="text-[9px] font-bold text-app-accent/70 uppercase tracking-wider">Ahora suena</span>
                 </div>
                 <h3 className="text-lg font-bold text-app-accent leading-tight">{settings.offAirName || 'Música de la Tierrita'}</h3>
-                <p className="text-[11px] text-white/40">La mejor selección musical campesina</p>
+                <p className="text-[11px] text-white/40">{settings.offAirSlogan || 'La mejor selección musical campesina'}</p>
               </>
             )}
 
@@ -322,12 +325,12 @@ export default function HomePage() {
       <AnimatePresence mode="wait">
         {view === 'player' && (
           <motion.main key="player" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar relative z-10">
-            {/* A continuación */}
+            {/* Siguiente Programa */}
             <div className="px-4 mb-3">
               <div className="p-3 rounded-xl bg-app-surface border border-app-bdr">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-app-t3" />
-                  <span className="text-[10px] font-bold text-app-t3 uppercase tracking-wider">A continuación</span>
+                  <span className="text-[10px] font-bold text-app-t3 uppercase tracking-wider">Siguiente Programa</span>
                 </div>
                 {nextProgram ? (
                   <div>
@@ -335,8 +338,12 @@ export default function HomePage() {
                     <p className="text-[11px] text-app-t3 mt-0.5">
                       {nextProgram.startTime} - {nextProgram.endTime}
                       {nextProgram.host && ` | ${nextProgram.host}`}
-                      {nextProgram.isNextDay && ` | ${DAY_NAMES[nextProgram.dayOfWeek]}`}
                     </p>
+                    {nextProgram.isNextDay && (
+                      <p className="text-[11px] font-bold mt-1" style={{ color: 'var(--accent, #e48d2a)' }}>
+                        {DAY_NAMES[nextProgram.dayOfWeek]}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div>
