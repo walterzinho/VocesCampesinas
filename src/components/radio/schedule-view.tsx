@@ -13,6 +13,7 @@ interface Program {
   startTime: string;
   endTime: string;
   genre: string | null;
+  imageUrl: string | null;
 }
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -161,25 +162,43 @@ export default function ScheduleView() {
                           const isLive = isCurrentlyPlaying(prog.startTime, prog.endTime, dayIdx);
                           const isNext = isUpcoming(prog.startTime, dayIdx);
                           return (
-                            <div key={prog.id} className={`relative p-2.5 rounded-xl transition-all duration-300 ${isLive ? 'bg-gradient-to-r from-app-accent/15 to-transparent border border-app-accent/30 shadow-[0_0_20px_rgba(244,208,63,0.1)]' : isNext ? 'bg-app-bg border border-app-bdr' : 'bg-app-bg/50 border border-app-bdr-l'}`}>
+                            <div key={prog.id} className={`relative rounded-xl transition-all duration-300 overflow-hidden ${isLive ? 'bg-gradient-to-r from-app-accent/15 to-transparent border border-app-accent/30 shadow-[0_0_20px_rgba(244,208,63,0.1)]' : isNext ? 'bg-app-bg border border-app-bdr' : 'bg-app-bg/50 border border-app-bdr-l'}`}>
                               {isLive && (
-                                <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+                                <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
                                   <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" /></span>
                                   <span className="text-[9px] font-bold text-red-400 uppercase">En Vivo</span>
                                 </div>
                               )}
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className={`font-semibold text-[13px] truncate ${isLive ? 'text-app-accent' : 'text-app-text'}`}>{prog.name}</h4>
-                                  {prog.host && <div className="flex items-center gap-1 mt-0.5"><Mic className="w-3 h-3 text-app-t3" /><span className="text-[11px] text-app-t3">{prog.host}</span></div>}
-                                  {prog.description && <p className="text-[10px] text-app-tdim mt-0.5 line-clamp-1">{prog.description}</p>}
-                                </div>
-                                <div className="flex items-center gap-1 ml-2 shrink-0">
-                                  <Clock className="w-3 h-3 text-app-t3" />
-                                  <span className="text-[11px] text-app-t3 font-mono">{prog.startTime} - {prog.endTime}</span>
+                              <div className="flex">
+                                {/* Left: Image or gradient placeholder */}
+                                {prog.imageUrl ? (
+                                  <div className="shrink-0 w-24 h-24 relative bg-app-surface overflow-hidden">
+                                    <img src={prog.imageUrl} alt={prog.name} className="w-full h-full object-cover" loading="lazy" />
+                                    <div className={`absolute top-0 left-0 w-1 h-full ${isLive ? 'bg-app-accent rounded-r' : 'bg-app-t3/30 rounded-r'}`} />
+                                  </div>
+                                ) : (
+                                  <div className={`shrink-0 w-24 h-24 relative flex items-center justify-center ${isLive ? 'bg-gradient-to-br from-app-accent/20 to-app-accent/5' : 'bg-gradient-to-br from-app-t3/10 to-transparent'}`}>
+                                    <Music className={`w-8 h-8 ${isLive ? 'text-app-accent/70' : 'text-app-tdim'}`} />
+                                    <div className={`absolute top-0 left-0 w-1 h-full ${isLive ? 'bg-app-accent rounded-r' : 'bg-app-t3/30 rounded-r'}`} />
+                                  </div>
+                                )}
+
+                                {/* Right: Program data */}
+                                <div className="flex-1 min-w-0 p-2.5 flex flex-col justify-between">
+                                  <div>
+                                    <h4 className={`font-semibold text-[13px] truncate ${isLive ? 'text-app-accent' : 'text-app-text'}`}>{prog.name}</h4>
+                                    {prog.host && <div className="flex items-center gap-1 mt-0.5"><Mic className="w-3 h-3 text-app-t3" /><span className="text-[11px] text-app-t3">{prog.host}</span></div>}
+                                    {prog.description && <p className="text-[10px] text-app-tdim mt-0.5 line-clamp-2">{prog.description}</p>}
+                                  </div>
+                                  <div className="flex items-center justify-between mt-1.5">
+                                    {prog.genre && <span className={`text-[9px] px-2 py-0.5 rounded-full ${isLive ? 'bg-app-accent/20 text-app-accent' : 'bg-app-surface text-app-t3'}`}>{prog.genre}</span>}
+                                    <div className="flex items-center gap-1 ml-auto shrink-0">
+                                      <Clock className="w-3 h-3 text-app-t3" />
+                                      <span className="text-[11px] text-app-t3 font-mono">{prog.startTime} - {prog.endTime}</span>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              {prog.genre && <span className={`inline-block mt-1.5 text-[9px] px-2 py-0.5 rounded-full ${isLive ? 'bg-app-accent/20 text-app-accent' : 'bg-app-surface text-app-t3'}`}>{prog.genre}</span>}
                             </div>
                           );
                         })}

@@ -77,14 +77,11 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
     const handleCanPlay = () => setIsLoading(false);
     const handleError = () => {
       setIsPlaying(false); setIsLoading(false);
-      if (reconnectAttemptsRef.current < 10) {
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-        reconnectAttemptsRef.current++;
-        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = setTimeout(() => tryPlay(), delay);
-      } else {
-        setError('Sin conexión. Toca para reconectar.');
-      }
+      // Reconnect indefinitely with capped backoff
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current % 8), 30000);
+      reconnectAttemptsRef.current++;
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = setTimeout(() => tryPlay(), delay);
     };
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('waiting', handleWaiting);
@@ -99,13 +96,29 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
     };
   }, [streamUrl, tryPlay]);
 
+  // Background keep-alive: prevents OS from killing the app while playing
   useEffect(() => {
-    let wakeLock: WakeLockSentinel | null = null;
-    if (isPlaying && 'wakeLock' in navigator) {
-      (navigator as any).wakeLock.request('screen').then((lock: WakeLockSentinel) => { wakeLock = lock; }).catch(() => {});
-    }
-    return () => { wakeLock?.release(); };
+    if (!isPlaying) return;
+    const keepalive = setInterval(() => {
+      // Silent fetch to signal the OS that this tab is still active
+      fetch('/api/settings', { method: 'HEAD', cache: 'no-store' }).catch(() => {});
+    }, 25000);
+    return () => clearInterval(keepalive);
   }, [isPlaying]);
+
+  // Reconnect audio when page becomes visible again (in case OS suspended it)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        const audio = audioRef.current;
+        if (audio && isPlaying && audio.paused) {
+          tryPlay();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isPlaying, tryPlay]);
 
   const togglePlay = async () => {
     hasInteractedRef.current = true;

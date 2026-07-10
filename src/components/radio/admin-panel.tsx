@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon, Play } from 'lucide-react';
+import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon, Play, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -60,8 +60,8 @@ interface AppSettings {
   primaryColor: string;
   darkColor: string;
   blogUrl: string;
-  offAirName: string;
   offAirSlogan: string;
+  offAirName: string;
   offAirImageUrl: string;
 }
 
@@ -82,6 +82,15 @@ interface Log {
   createdAt: string;
 }
 
+interface DeviceInfo {
+  id: string;
+  deviceId: string;
+  platform: string | null;
+  userAgent: string | null;
+  lastSeenAt: string;
+  installedAt: string;
+}
+
 interface AdminPanelProps {
   onBack: () => void;
 }
@@ -100,11 +109,19 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     facebookUrl: '', instagramUrl: '', whatsappUrl: '',
     youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#e48d2a', darkColor: '#17202A',
+    blogUrl: '', offAirSlogan: '', offAirName: '', offAirImageUrl: '',
   });
   const [offAirImage, setOffAirImage] = useState('');
   const [uploadingOffAir, setUploadingOffAir] = useState(false);
   const [logs, setLogs] = useState<Log[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [devices, setDevices] = useState<DeviceInfo[]>([]);
+  const [deviceStats, setDeviceStats] = useState<{ total: number; platformCounts: Record<string, number> }>({ total: 0, platformCounts: {} });
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [pushSending, setPushSending] = useState(false);
+  const [pushSubscribers, setPushSubscribers] = useState(0);
+  const [vapidConfigured, setVapidConfigured] = useState(false);
 
   // Dialog states
   const [programDialog, setProgramDialog] = useState(false);
@@ -146,13 +163,14 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   const fetchAllData = useCallback(async () => {
     try {
-      const [progRes, msgRes, setRes, logRes, reqRes, vidRes] = await Promise.all([
+      const [progRes, msgRes, setRes, logRes, reqRes, vidRes, devRes] = await Promise.all([
         fetch('/api/programs/all', authHeader()),
         fetch('/api/messages/all', authHeader()),
         fetch('/api/settings', authHeader()),
         fetch('/api/admin', authHeader()),
         fetch('/api/requests', authHeader()),
         fetch('/api/videos', authHeader()),
+        fetch('/api/devices', authHeader()),
       ]);
 
       if (progRes.ok) setPrograms(await progRes.json());
@@ -165,6 +183,23 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       if (logRes.ok) setLogs(await logRes.json());
       if (reqRes.ok) setSongRequests(await reqRes.json());
       if (vidRes.ok) setVideos(await vidRes.json());
+      if (devRes.ok) {
+        const devData = await devRes.json();
+        setDevices(devData.devices || []);
+        setDeviceStats({ total: devData.total || 0, platformCounts: devData.platformCounts || {} });
+      }
+
+      // Check VAPID + subscriber count
+      const vapidRes = await fetch('/api/push/vapid-key');
+      if (vapidRes.ok) {
+        const vapidData = await vapidRes.json();
+        setVapidConfigured(vapidData.configured);
+      }
+      const subCountRes = await fetch('/api/push/subscribe', authHeader());
+      if (subCountRes.ok) {
+        const subData = await subCountRes.json();
+        setPushSubscribers(subData.count || 0);
+      }
     } catch { /* ignore */ }
   }, [authHeader]);
 
@@ -237,9 +272,10 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     const url = await uploadFile(file, 'program');
     if (url) {
       setEditingProgram(prev => ({ ...prev, imageUrl: url }));
-      toast.success('Imagen de programación subida');
+      toast.success('Imagen subida');
     }
     setUploadingImage(false);
+    e.target.value = '';
   };
 
   const handlePlayerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,9 +285,10 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     const url = await uploadFile(file, 'program-player');
     if (url) {
       setEditingProgram(prev => ({ ...prev, playerImageUrl: url }));
-      toast.success('Imagen del reproductor subida');
+      toast.success('Imagen de reproductor subida');
     }
     setUploadingPlayerImage(false);
+    e.target.value = '';
   };
 
   const handleMessageImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,6 +301,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.success('Imagen subida');
     }
     setUploadingMsgImage(false);
+    e.target.value = '';
   };
 
   const handleOffAirImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,6 +316,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.success('Imagen de fuera de aire actualizada');
     }
     setUploadingOffAir(false);
+    e.target.value = '';
   };
 
   const saveSettingDirect = async (key: string, value: string) => {
@@ -762,70 +801,44 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     </div>
                     {/* Image Upload - Programación (1:1) */}
                     <div>
-                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de programación (1:1 - logo del programa)</label>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen programación (1:1, logo)</label>
                       <div className="flex items-center gap-2">
                         <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
                           <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                           <span className="text-xs text-white/50 truncate">
-                            {editingProgram.imageUrl || 'Seleccionar imagen 1:1...'}
+                            {editingProgram.imageUrl ? editingProgram.imageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '').substring(0, 30) : 'Seleccionar imagen 1:1...'}
                           </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
+                          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                         </label>
-                        {uploadingImage && (
-                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
-                        )}
+                        {uploadingImage && <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>}
                         {editingProgram.imageUrl && (
-                          <button
-                            onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))}
-                            className="text-white/30 hover:text-red-400 transition-colors p-1"
-                            title="Quitar imagen"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <button onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))} className="text-white/30 hover:text-red-400 transition-colors p-1" title="Quitar"><X className="w-3.5 h-3.5" /></button>
                         )}
                       </div>
                       {editingProgram.imageUrl && (
-                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 w-16 bg-white/5">
+                        <div className="mt-1.5 w-16 h-16 rounded-lg overflow-hidden bg-white/5 border border-white/10">
                           <img src={editingProgram.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.imageUrl.slice('/uploads'.length)}` : editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
                     </div>
                     {/* Image Upload - Reproductor (horizontal) */}
                     <div>
-                      <label className="text-[10px] text-white/40 mb-1 block">Imagen del reproductor (horizontal - En Vivo)</label>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen reproductor en vivo (horizontal)</label>
                       <div className="flex items-center gap-2">
                         <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
-                          <Play className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                           <span className="text-xs text-white/50 truncate">
-                            {editingProgram.playerImageUrl || 'Seleccionar imagen horizontal...'}
+                            {editingProgram.playerImageUrl ? editingProgram.playerImageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '').substring(0, 30) : 'Seleccionar imagen horizontal...'}
                           </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePlayerImageUpload}
-                            className="hidden"
-                          />
+                          <input type="file" accept="image/*" onChange={handlePlayerImageUpload} className="hidden" />
                         </label>
-                        {uploadingPlayerImage && (
-                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
-                        )}
+                        {uploadingPlayerImage && <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>}
                         {editingProgram.playerImageUrl && (
-                          <button
-                            onClick={() => setEditingProgram(prev => ({ ...prev, playerImageUrl: '' }))}
-                            className="text-white/30 hover:text-red-400 transition-colors p-1"
-                            title="Quitar imagen"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <button onClick={() => setEditingProgram(prev => ({ ...prev, playerImageUrl: '' }))} className="text-white/30 hover:text-red-400 transition-colors p-1" title="Quitar"><X className="w-3.5 h-3.5" /></button>
                         )}
                       </div>
                       {editingProgram.playerImageUrl && (
-                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 w-28 bg-white/5">
+                        <div className="mt-1.5 h-14 rounded-lg overflow-hidden bg-white/5 border border-white/10">
                           <img src={editingProgram.playerImageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.playerImageUrl.slice('/uploads'.length)}` : editingProgram.playerImageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
@@ -1230,7 +1243,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     placeholder="La mejor selección musical campesina"
                     className="bg-white/5 border-white/10 text-white text-xs"
                   />
-                  <p className="text-[9px] text-white/25 mt-0.5">Texto secundario cuando no hay programa al aire</p>
+                  <p className="text-[9px] text-white/25 mt-0.5">Descripción que aparece bajo el nombre</p>
                 </div>
                 <div>
                   <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo (fuera de aire)</label>
@@ -1355,6 +1368,195 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-white/70 mb-3">Notificaciones Telegram</h3>
+              <p className="text-[10px] text-white/30 mb-2">Recibe alertas de peticiones, saludos y dedicaciones en tu Telegram.</p>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Token del Bot</label>
+                  <Input
+                    value={(settings as any).telegramBotToken || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, telegramBotToken: e.target.value }))}
+                    onBlur={() => saveSetting('telegramBotToken', (settings as any).telegramBotToken || '')}
+                    placeholder="123456:ABC-DEF..."
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40 mb-1 block">Chat ID</label>
+                  <Input
+                    value={(settings as any).telegramChatId || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, telegramChatId: e.target.value }))}
+                    onBlur={() => saveSetting('telegramChatId', (settings as any).telegramChatId || '')}
+                    placeholder="-1001234567890"
+                    className="bg-white/5 border-white/10 text-white text-xs"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    const res = await fetch('/api/requests/test-telegram', {
+                      headers: { 'Authorization': `Bearer ${password}` },
+                    });
+                    if (res.ok) toast.success('Notificación de prueba enviada');
+                    else toast.error('Error al enviar prueba. Verifica token y chat ID.');
+                  }}
+                  className="text-[10px] px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors"
+                >
+                  Enviar notificación de prueba
+                </button>
+              </div>
+            </div>
+
+            {/* Notificaciones Push */}
+            <div>
+              <h3 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
+                <Bell className="w-4 h-4" /> Notificaciones Push
+              </h3>
+              <p className="text-[10px] text-white/30 mb-3">Envía notificaciones directas al celular de los oyentes que tengan la app instalada.</p>
+
+              {!vapidConfigured ? (
+                <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 mb-3">
+                  <p className="text-[11px] text-yellow-300/80 mb-2">Primero debes generar las llaves de seguridad para activar las notificaciones push.</p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/push/generate-vapid', { method: 'POST', headers: authHeader().headers });
+                        if (res.ok) {
+                          toast.success('Llaves VAPID generadas');
+                          fetchAllData();
+                        } else toast.error('Error al generar llaves');
+                      } catch { toast.error('Error de conexión'); }
+                    }}
+                    className="text-[10px] px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 transition-colors font-medium"
+                  >
+                    Generar llaves VAPID
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-[9px] font-bold rounded-full">VAPID configurado</span>
+                    <span className="text-[10px] text-white/30">{pushSubscribers} suscriptor{pushSubscribers !== 1 ? 'es' : ''}</span>
+                  </div>
+
+                  <div className="space-y-2 mb-3">
+                    <div>
+                      <label className="text-[10px] text-white/40 mb-1 block">Título de la notificación</label>
+                      <Input
+                        value={pushTitle}
+                        onChange={e => setPushTitle(e.target.value)}
+                        placeholder="Ej: ¡Nuevo programa esta semana!"
+                        className="bg-white/5 border-white/10 text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-white/40 mb-1 block">Mensaje</label>
+                      <Textarea
+                        value={pushBody}
+                        onChange={e => setPushBody(e.target.value)}
+                        placeholder="Ej: No te pierdas 'El Campo Habla' este viernes a las 7pm"
+                        className="bg-white/5 border-white/10 text-white text-xs min-h-[60px] resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      if (!pushTitle.trim() || !pushBody.trim()) {
+                        toast.error('Título y mensaje son requeridos');
+                        return;
+                      }
+                      setPushSending(true);
+                      try {
+                        const res = await fetch('/api/push/send', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+                          body: JSON.stringify({ title: pushTitle, body: pushBody }),
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          toast.success(`Enviada: ${data.sent} exitosas, ${data.failed} fallidas${data.cleaned ? ` (${data.cleaned} limpiadas)` : ''}`);
+                          setPushTitle('');
+                          setPushBody('');
+                          fetchAllData();
+                        } else {
+                          toast.error(data.error || 'Error al enviar');
+                        }
+                      } catch { toast.error('Error de conexión'); }
+                      finally { setPushSending(false); }
+                    }}
+                    disabled={pushSending || pushSubscribers === 0}
+                    className="text-[10px] px-3 py-1.5 rounded-lg bg-[#e48d2a]/20 text-[#e48d2a] hover:bg-[#e48d2a]/30 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {pushSending ? 'Enviando...' : `Enviar a ${pushSubscribers} suscriptor${pushSubscribers !== 1 ? 'es' : ''}`}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* App Instalaciones */}
+            <div>
+              <h3 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
+                <Smartphone className="w-4 h-4" /> App Instalada
+              </h3>
+              <p className="text-[10px] text-white/30 mb-3">Dispositivos que tienen la app instalada y activa.</p>
+              
+              {/* Stats cards */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <p className="text-lg font-bold text-[#e48d2a]">{deviceStats.total}</p>
+                  <p className="text-[9px] text-white/40">Total</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <p className="text-lg font-bold text-green-400">{deviceStats.platformCounts?.android || 0}</p>
+                  <p className="text-[9px] text-white/40">Android</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <p className="text-lg font-bold text-blue-400">{deviceStats.platformCounts?.ios || 0}</p>
+                  <p className="text-[9px] text-white/40">iOS</p>
+                </div>
+              </div>
+
+              {/* Device list */}
+              {devices.length > 0 ? (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto hide-scrollbar">
+                  {devices.slice(0, 20).map(device => {
+                    const platformIcon = device.platform === 'android' ? '🤖' : device.platform === 'ios' ? '🍎' : '💻';
+                    const lastSeen = new Date(device.lastSeenAt);
+                    const now = new Date();
+                    const diffMs = now.getTime() - lastSeen.getTime();
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const lastSeenText = diffMins < 1 ? 'Ahora' : diffMins < 60 ? `Hace ${diffMins}m` : diffMins < 1440 ? `Hace ${Math.floor(diffMins / 60)}h` : `Hace ${Math.floor(diffMins / 1440)}d`;
+                    const isActive = diffMins < 30;
+
+                    return (
+                      <div key={device.id} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white/[0.03] border border-white/5">
+                        <span className="text-base">{platformIcon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-medium text-white/70">{device.platform || 'Desconocido'}</span>
+                            {isActive && (
+                              <span className="px-1 py-0.5 bg-green-500/20 text-green-400 text-[7px] font-bold rounded-full">ACTIVO</span>
+                            )}
+                          </div>
+                          <p className="text-[9px] text-white/25 truncate">{device.userAgent?.substring(0, 50) || 'N/A'}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[9px] text-white/30">{lastSeenText}</p>
+                          <p className="text-[8px] text-white/15">{new Date(device.installedAt).toLocaleDateString('es-CO')}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-white/20 text-[10px]">
+                  <Smartphone className="w-6 h-6 mx-auto mb-1.5 opacity-30" />
+                  Aún no hay dispositivos registrados
+                </div>
+              )}
             </div>
 
             <div>

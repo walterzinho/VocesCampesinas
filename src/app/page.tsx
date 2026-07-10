@@ -8,7 +8,7 @@ import SongRequestForm from '@/components/radio/song-request-form';
 import BlogSection from '@/components/radio/blog-section';
 import VideoSection from '@/components/radio/video-section';
 import AdminPanel from '@/components/radio/admin-panel';
-import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon } from 'lucide-react';
+import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon, Bell, BellOff, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface StationSettings {
@@ -25,7 +25,6 @@ interface StationSettings {
   darkColor: string;
   blogUrl: string;
   offAirName: string;
-  offAirSlogan: string;
   offAirImageUrl: string;
 }
 
@@ -52,7 +51,7 @@ export default function HomePage() {
     stationSlogan: 'El Campo Nos Une',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '', youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#e48d2a', darkColor: '#17202A', blogUrl: '',
-    offAirName: 'Música de la Tierrita', offAirSlogan: 'La mejor selección musical campesina', offAirImageUrl: '',
+    offAirName: 'Música de la Tierrita', offAirImageUrl: '',
   });
   const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
   const [nextProgram, setNextProgram] = useState<Program | null>(null);
@@ -61,6 +60,8 @@ export default function HomePage() {
   const [isOnline, setIsOnline] = useState(true);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
 
   // Load theme from localStorage
   useEffect(() => {
@@ -80,7 +81,7 @@ export default function HomePage() {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch('/api/programs');
+        const res = await fetch('/api/programs/all');
         if (res.ok && !cancelled) {
           const programs: Program[] = await res.json();
           const now = new Date();
@@ -160,6 +161,106 @@ export default function HomePage() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  // Track PWA installations via standalone display mode
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as any).standalone === true;
+
+    if (!isStandalone) return;
+
+    // Get or create device ID
+    let deviceId = localStorage.getItem('vc-device-id');
+    if (!deviceId) {
+      deviceId = 'vc-' + Date.now() + '-' + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem('vc-device-id', deviceId);
+    }
+
+    // Register device (fire-and-forget, upsert updates lastSeenAt)
+    fetch('/api/devices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId }),
+    }).catch(() => { /* silent */ });
+
+    // Also register periodically (every 5 min) to keep lastSeenAt fresh
+    const interval = setInterval(() => {
+      fetch('/api/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId }),
+      }).catch(() => { /* silent */ });
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Push notifications: check support and current status
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    setPushSupported(true);
+
+    // Check if already subscribed
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      setPushEnabled(!!sub);
+    }).catch(() => {});
+  }, []);
+
+  const togglePush = async () => {
+    if (!pushSupported) return;
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+
+      if (pushEnabled) {
+        // Unsubscribe
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          await fetch('/api/push/subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          }).catch(() => {});
+        }
+        setPushEnabled(false);
+        return;
+      }
+
+      // Check if VAPID is configured
+      const vapidRes = await fetch('/api/push/vapid-key');
+      const vapidData = await vapidRes.json();
+      if (!vapidData.configured) return; // Not configured yet, do nothing
+
+      // Request permission
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      // Subscribe
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidData.key,
+      });
+
+      // Send subscription to server
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          keys: {
+            auth: subscription.getKey('auth') ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))) : '',
+            p256dh: subscription.getKey('p256dh') ? btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))) : '',
+          },
+        }),
+      });
+
+      setPushEnabled(true);
+    } catch (error) {
+      console.error('Error toggle push:', error);
+    }
+  };
+
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -176,74 +277,43 @@ export default function HomePage() {
   };
 
   const backgroundImageUrl = useMemo(() => {
-    // Prioridad: playerImageUrl del programa > offAirImageUrl > default
-    const raw = currentProgram?.playerImageUrl || settings.offAirImageUrl || '/api/uploads/musicatierrita.png';
+    const raw = currentProgram?.playerImageUrl || currentProgram?.imageUrl || settings.offAirImageUrl || '/api/uploads/musicatierrita.png';
     return raw.startsWith('/uploads/') ? `/api/uploads${raw.slice('/uploads'.length)}` : raw;
   }, [currentProgram, settings.offAirImageUrl]);
 
-  // Admin view — full screen but with player at top
+  // Admin view — standalone config screen, no player, no bottom nav
   if (view === 'admin') {
     return (
       <div className="relative w-full h-dvh overflow-hidden flex flex-col bg-app-bg" data-theme={theme}>
-        {!isOnline && (
-          <div className="absolute top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs py-1.5 flex items-center justify-center gap-1.5">
-            <WifiOff className="w-3 h-3" /> Sin conexión a internet
-          </div>
-        )}
-
-        {/* Header + Ahora Suena + Player (always visible) */}
-        <header className="shrink-0 text-center pt-4 pb-2 px-4 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <img src="/logo.png" alt={settings.stationName} className="w-8 h-8 rounded-lg object-contain" />
-              <div>
-                <h1 className="text-sm font-bold text-app-text leading-tight">{settings.stationName}</h1>
-                <p className="text-[10px] text-app-accent/70 font-medium">{settings.stationSlogan}</p>
-              </div>
-            </div>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors">
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-app-t3" /> : <Moon className="w-4 h-4 text-app-t3" />}
+        <div className="max-w-lg mx-auto w-full h-full flex flex-col relative">
+          {/* Simple header */}
+          <header className="shrink-0 flex items-center justify-between px-4 pt-5 pb-3 relative z-10">
+            <button onClick={() => setView('player')} className="flex items-center gap-2 text-app-tdim hover:text-app-text transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Volver</span>
             </button>
-          </div>
-        </header>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-app-text">Configuración</span>
+              <Shield className="w-4 h-4 text-app-accent" />
+            </div>
+            <div className="w-16" />
+          </header>
 
-        {/* Compact player in admin */}
-        <div className="shrink-0 px-4 pb-2">
-          <div className="rounded-xl bg-app-surface border border-app-bdr p-2.5">
-            <RadioPlayer streamUrl={settings.streamUrl} stationName={settings.stationName} currentProgram={currentProgram?.name} variant="compact" />
+          {/* Admin panel — full remaining space */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
+            <AdminPanel onBack={() => setView('player')} />
           </div>
+
+          <style jsx global>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
         </div>
-
-        {/* Admin panel */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
-          <AdminPanel onBack={() => setView('player')} />
-        </div>
-
-        {/* Bottom nav */}
-        <nav className="shrink-0 bg-app-bg/95 backdrop-blur-lg border-t border-app-bdr pb-[env(safe-area-inset-bottom)] relative z-10">
-          <div className="flex items-center justify-around py-2 px-2">
-            {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación'], ['admin', Shield, 'Admin']] as const).map(([v, Icon, label]) => (
-              <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-app-accent' : 'text-app-tdim hover:text-app-t3'}`}>
-                <Icon className="w-5 h-5" /><span className="text-[10px] font-medium">{label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        {/* Floating install button */}
-        {showInstallBtn && (
-          <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-app-accent text-app-bg flex items-center justify-center shadow-xl hover:bg-app-accent-dk transition-all active:scale-90" title="Instalar app">
-            <Download className="w-5 h-5" />
-          </button>
-        )}
-
-        <style jsx global>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
       </div>
     );
   }
 
   return (
     <div className="relative w-full h-dvh overflow-hidden flex flex-col bg-app-bg" data-theme={theme}>
+      {/* Desktop: constrain to phone width & center */}
+      <div className="max-w-lg mx-auto w-full h-full flex flex-col relative">
       {/* Offline indicator */}
       {!isOnline && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs py-1.5 flex items-center justify-center gap-1.5">
@@ -268,9 +338,14 @@ export default function HomePage() {
               <p className="text-[10px] text-app-accent/70 font-medium">{settings.stationSlogan}</p>
             </div>
           </div>
-          <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-app-t3" /> : <Moon className="w-4 h-4 text-app-t3" />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setView('admin')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title="Administración">
+              <Shield className="w-4 h-4 text-app-tdim" />
+            </button>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-app-t3" /> : <Moon className="w-4 h-4 text-app-t3" />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -280,8 +355,8 @@ export default function HomePage() {
           {/* Background image */}
           <div className="absolute inset-0 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${backgroundImageUrl})` }} />
           {/* Gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-app-bg via-app-bg/70 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-app-bg/50 to-transparent h-1/3" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent h-1/3" />
 
           {/* Content */}
           <div className="relative flex flex-col justify-between p-3.5" style={{ minHeight: '140px' }}>
@@ -308,7 +383,7 @@ export default function HomePage() {
                   <span className="text-[9px] font-bold text-app-accent/70 uppercase tracking-wider">Ahora suena</span>
                 </div>
                 <h3 className="text-lg font-bold text-app-accent leading-tight">{settings.offAirName || 'Música de la Tierrita'}</h3>
-                <p className="text-[11px] text-white/40">{settings.offAirSlogan || 'La mejor selección musical campesina'}</p>
+                <p className="text-[11px] text-white/40">{settings.offAirSlogan || ''}</p>
               </>
             )}
 
@@ -336,14 +411,14 @@ export default function HomePage() {
                   <div>
                     <h4 className="text-sm font-semibold text-app-text">{nextProgram.name}</h4>
                     <p className="text-[11px] text-app-t3 mt-0.5">
+                      {nextProgram.isNextDay && (
+                        <span className="inline-block px-1.5 py-0.5 rounded-md bg-[#e48d2a]/20 text-[#e48d2a] text-[10px] font-bold mr-1.5">
+                          {DAY_NAMES[nextProgram.dayOfWeek]}
+                        </span>
+                      )}
                       {nextProgram.startTime} - {nextProgram.endTime}
                       {nextProgram.host && ` | ${nextProgram.host}`}
                     </p>
-                    {nextProgram.isNextDay && (
-                      <p className="text-[11px] font-bold mt-1" style={{ color: 'var(--accent, #e48d2a)' }}>
-                        {DAY_NAMES[nextProgram.dayOfWeek]}
-                      </p>
-                    )}
                   </div>
                 ) : (
                   <div>
@@ -395,6 +470,16 @@ export default function HomePage() {
               <button onClick={handleShare} className="w-9 h-9 rounded-full bg-app-surface border border-app-bdr flex items-center justify-center hover:bg-app-surface-h transition-all" aria-label="Compartir">
                 <Share2 className="w-3.5 h-3.5 text-app-t2" />
               </button>
+              {pushSupported && (
+                <button
+                  onClick={togglePush}
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${pushEnabled ? 'bg-[#e48d2a]/20 border-[#e48d2a]/30 text-[#e48d2a]' : 'bg-app-surface border-app-bdr text-app-t2 hover:bg-app-surface-h'}`}
+                  aria-label={pushEnabled ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+                  title={pushEnabled ? 'Notificaciones activadas' : 'Activar notificaciones'}
+                >
+                  {pushEnabled ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+                </button>
+              )}
             </div>
           </motion.main>
         )}
@@ -415,7 +500,7 @@ export default function HomePage() {
       {/* Bottom Navigation */}
       <nav className="shrink-0 bg-app-bg/95 backdrop-blur-lg border-t border-app-bdr pb-[env(safe-area-inset-bottom)] relative z-10">
         <div className="flex items-center justify-around py-2 px-2">
-          {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación'], ['admin', Shield, 'Admin']] as const).map(([v, Icon, label]) => (
+          {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación']] as const).map(([v, Icon, label]) => (
             <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-app-accent' : 'text-app-tdim hover:text-app-t3'}`}>
               <Icon className="w-5 h-5" /><span className="text-[10px] font-medium">{label}</span>
             </button>
@@ -424,6 +509,7 @@ export default function HomePage() {
       </nav>
 
       <style jsx global>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
+      </div>
     </div>
   );
 }
