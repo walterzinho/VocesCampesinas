@@ -23,7 +23,11 @@ export async function GET() {
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    return NextResponse.json({ ok: true, message: 'Tablas Device y PushSubscription creadas' });
+    // Add playerImageUrl column to Program
+    await db.$executeRawUnsafe(`
+      ALTER TABLE Program ADD COLUMN playerImageUrl TEXT
+    `).catch(() => { /* column may already exist */ });
+    return NextResponse.json({ ok: true, message: 'Migración completada' });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }

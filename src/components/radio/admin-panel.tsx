@@ -26,6 +26,7 @@ interface Program {
   genre: string | null;
   sortOrder: number;
   imageUrl: string | null;
+  playerImageUrl: string | null;
 }
 
 interface Message {
@@ -230,6 +231,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   // Image upload handler
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingPlayerImage, setUploadingPlayerImage] = useState(false);
   const [uploadingMsgImage, setUploadingMsgImage] = useState(false);
   const uploadFile = async (file: File, field: string): Promise<string | null> => {
     if (file.size > 5 * 1024 * 1024) {
@@ -273,6 +275,19 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       toast.success('Imagen subida');
     }
     setUploadingImage(false);
+    e.target.value = '';
+  };
+
+  const handlePlayerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPlayerImage(true);
+    const url = await uploadFile(file, 'program-player');
+    if (url) {
+      setEditingProgram(prev => ({ ...prev, playerImageUrl: url }));
+      toast.success('Imagen de reproductor subida');
+    }
+    setUploadingPlayerImage(false);
     e.target.value = '';
   };
 
@@ -335,6 +350,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       isActive: editingProgram.isActive ?? true,
       sortOrder: editingProgram.sortOrder ?? 0,
       imageUrl: editingProgram.imageUrl || '',
+      playerImageUrl: editingProgram.playerImageUrl || '',
     };
 
     try {
@@ -783,37 +799,47 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                         className="bg-white/5 border-white/10 text-white text-xs"
                       />
                     </div>
-                    {/* Image Upload */}
+                    {/* Image Upload - Programación (1:1) */}
                     <div>
-                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo</label>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen programación (1:1, logo)</label>
                       <div className="flex items-center gap-2">
                         <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                           <span className="text-xs text-white/50 truncate">
-                            {editingProgram.imageUrl || 'Seleccionar imagen...'}
+                            {editingProgram.imageUrl ? editingProgram.imageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '').substring(0, 30) : 'Seleccionar imagen 1:1...'}
                           </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
+                          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                         </label>
-                        {uploadingImage && (
-                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
-                        )}
+                        {uploadingImage && <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>}
                         {editingProgram.imageUrl && (
-                          <button
-                            onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))}
-                            className="text-white/30 hover:text-red-400 transition-colors p-1"
-                            title="Quitar imagen"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <button onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))} className="text-white/30 hover:text-red-400 transition-colors p-1" title="Quitar"><X className="w-3.5 h-3.5" /></button>
                         )}
                       </div>
                       {editingProgram.imageUrl && (
-                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
+                        <div className="mt-1.5 w-16 h-16 rounded-lg overflow-hidden bg-white/5 border border-white/10">
                           <img src={editingProgram.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.imageUrl.slice('/uploads'.length)}` : editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Image Upload - Reproductor (horizontal) */}
+                    <div>
+                      <label className="text-[10px] text-white/40 mb-1 block">Imagen reproductor en vivo (horizontal)</label>
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                          <span className="text-xs text-white/50 truncate">
+                            {editingProgram.playerImageUrl ? editingProgram.playerImageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '').substring(0, 30) : 'Seleccionar imagen horizontal...'}
+                          </span>
+                          <input type="file" accept="image/*" onChange={handlePlayerImageUpload} className="hidden" />
+                        </label>
+                        {uploadingPlayerImage && <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>}
+                        {editingProgram.playerImageUrl && (
+                          <button onClick={() => setEditingProgram(prev => ({ ...prev, playerImageUrl: '' }))} className="text-white/30 hover:text-red-400 transition-colors p-1" title="Quitar"><X className="w-3.5 h-3.5" /></button>
+                        )}
+                      </div>
+                      {editingProgram.playerImageUrl && (
+                        <div className="mt-1.5 h-14 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                          <img src={editingProgram.playerImageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.playerImageUrl.slice('/uploads'.length)}` : editingProgram.playerImageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
                     </div>

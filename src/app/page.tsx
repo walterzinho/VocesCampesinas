@@ -36,6 +36,7 @@ interface Program {
   endTime: string;
   dayOfWeek: number;
   imageUrl?: string | null;
+  playerImageUrl?: string | null;
   isNextDay?: boolean;
 }
 
@@ -276,7 +277,7 @@ export default function HomePage() {
   };
 
   const backgroundImageUrl = useMemo(() => {
-    const raw = currentProgram?.imageUrl || settings.offAirImageUrl || '/api/uploads/musicatierrita.png';
+    const raw = currentProgram?.playerImageUrl || currentProgram?.imageUrl || settings.offAirImageUrl || '/api/uploads/musicatierrita.png';
     return raw.startsWith('/uploads/') ? `/api/uploads${raw.slice('/uploads'.length)}` : raw;
   }, [currentProgram, settings.offAirImageUrl]);
 
@@ -429,20 +430,24 @@ export default function HomePage() {
       <AnimatePresence mode="wait">
         {view === 'player' && (
           <motion.main key="player" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar relative z-10">
-            {/* A continuación */}
+            {/* Siguiente Programa */}
             <div className="px-4 mb-3">
               <div className="p-3 rounded-xl bg-app-surface border border-app-bdr">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-app-t3" />
-                  <span className="text-[10px] font-bold text-app-t3 uppercase tracking-wider">A continuación</span>
+                  <span className="text-[10px] font-bold text-app-t3 uppercase tracking-wider">Siguiente Programa</span>
                 </div>
                 {nextProgram ? (
                   <div>
                     <h4 className="text-sm font-semibold text-app-text">{nextProgram.name}</h4>
                     <p className="text-[11px] text-app-t3 mt-0.5">
+                      {nextProgram.isNextDay && (
+                        <span className="inline-block px-1.5 py-0.5 rounded-md bg-[#e48d2a]/20 text-[#e48d2a] text-[10px] font-bold mr-1.5">
+                          {DAY_NAMES[nextProgram.dayOfWeek]}
+                        </span>
+                      )}
                       {nextProgram.startTime} - {nextProgram.endTime}
                       {nextProgram.host && ` | ${nextProgram.host}`}
-                      {nextProgram.isNextDay && ` | ${DAY_NAMES[nextProgram.dayOfWeek]}`}
                     </p>
                   </div>
                 ) : (

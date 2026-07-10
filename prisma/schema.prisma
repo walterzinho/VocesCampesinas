@@ -16,7 +16,8 @@ model Program {
   startTime String   // "06:00"
   endTime   String   // "08:00"
   isActive  Boolean  @default(true)
-  imageUrl  String?
+  imageUrl  String?  // 1:1 logo para programación
+  playerImageUrl String? // horizontal para reproductor en vivo
   genre     String?
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
