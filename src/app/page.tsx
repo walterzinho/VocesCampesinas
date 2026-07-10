@@ -8,7 +8,7 @@ import SongRequestForm from '@/components/radio/song-request-form';
 import BlogSection from '@/components/radio/blog-section';
 import VideoSection from '@/components/radio/video-section';
 import AdminPanel from '@/components/radio/admin-panel';
-import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon, Bell, BellOff } from 'lucide-react';
+import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon, Bell, BellOff, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface StationSettings {
@@ -281,65 +281,30 @@ export default function HomePage() {
     return raw.startsWith('/uploads/') ? `/api/uploads${raw.slice('/uploads'.length)}` : raw;
   }, [currentProgram, settings.offAirImageUrl]);
 
-  // Admin view — full screen but with player at top
+  // Admin view — standalone config screen, no player, no bottom nav
   if (view === 'admin') {
     return (
       <div className="relative w-full h-dvh overflow-hidden flex flex-col bg-app-bg" data-theme={theme}>
-      {/* Desktop: constrain to phone width & center */}
-      <div className="max-w-lg mx-auto w-full h-full flex flex-col relative">
-        {!isOnline && (
-          <div className="absolute top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs py-1.5 flex items-center justify-center gap-1.5">
-            <WifiOff className="w-3 h-3" /> Sin conexión a internet
-          </div>
-        )}
-
-        {/* Header + Ahora Suena + Player (always visible) */}
-        <header className="shrink-0 text-center pt-4 pb-2 px-4 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <img src="/logo.png" alt={settings.stationName} className="w-8 h-8 rounded-lg object-contain" />
-              <div>
-                <h1 className="text-sm font-bold text-app-text leading-tight">{settings.stationName}</h1>
-                <p className="text-[10px] text-app-accent/70 font-medium">{settings.stationSlogan}</p>
-              </div>
-            </div>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors">
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-app-t3" /> : <Moon className="w-4 h-4 text-app-t3" />}
+        <div className="max-w-lg mx-auto w-full h-full flex flex-col relative">
+          {/* Simple header */}
+          <header className="shrink-0 flex items-center justify-between px-4 pt-5 pb-3 relative z-10">
+            <button onClick={() => setView('player')} className="flex items-center gap-2 text-app-tdim hover:text-app-text transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Volver</span>
             </button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-app-text">Configuración</span>
+              <Shield className="w-4 h-4 text-app-accent" />
+            </div>
+            <div className="w-16" />
+          </header>
+
+          {/* Admin panel — full remaining space */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
+            <AdminPanel onBack={() => setView('player')} />
           </div>
-        </header>
 
-        {/* Compact player in admin */}
-        <div className="shrink-0 px-4 pb-2">
-          <div className="rounded-xl bg-app-surface border border-app-bdr p-2.5">
-            <RadioPlayer streamUrl={settings.streamUrl} stationName={settings.stationName} currentProgram={currentProgram?.name} variant="compact" />
-          </div>
-        </div>
-
-        {/* Admin panel */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
-          <AdminPanel onBack={() => setView('player')} />
-        </div>
-
-        {/* Bottom nav */}
-        <nav className="shrink-0 bg-app-bg/95 backdrop-blur-lg border-t border-app-bdr pb-[env(safe-area-inset-bottom)] relative z-10">
-          <div className="flex items-center justify-around py-2 px-2">
-            {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación'], ['admin', Shield, 'Admin']] as const).map(([v, Icon, label]) => (
-              <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-app-accent' : 'text-app-tdim hover:text-app-t3'}`}>
-                <Icon className="w-5 h-5" /><span className="text-[10px] font-medium">{label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        {/* Floating install button */}
-        {showInstallBtn && (
-          <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-app-accent text-app-bg flex items-center justify-center shadow-xl hover:bg-app-accent-dk transition-all active:scale-90" title="Instalar app">
-            <Download className="w-5 h-5" />
-          </button>
-        )}
-
-        <style jsx global>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
+          <style jsx global>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
         </div>
       </div>
     );
@@ -373,9 +338,14 @@ export default function HomePage() {
               <p className="text-[10px] text-app-accent/70 font-medium">{settings.stationSlogan}</p>
             </div>
           </div>
-          <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-app-t3" /> : <Moon className="w-4 h-4 text-app-t3" />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setView('admin')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title="Administración">
+              <Shield className="w-4 h-4 text-app-tdim" />
+            </button>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-app-t3" /> : <Moon className="w-4 h-4 text-app-t3" />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -530,7 +500,7 @@ export default function HomePage() {
       {/* Bottom Navigation */}
       <nav className="shrink-0 bg-app-bg/95 backdrop-blur-lg border-t border-app-bdr pb-[env(safe-area-inset-bottom)] relative z-10">
         <div className="flex items-center justify-around py-2 px-2">
-          {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación'], ['admin', Shield, 'Admin']] as const).map(([v, Icon, label]) => (
+          {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación']] as const).map(([v, Icon, label]) => (
             <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-app-accent' : 'text-app-tdim hover:text-app-t3'}`}>
               <Icon className="w-5 h-5" /><span className="text-[10px] font-medium">{label}</span>
             </button>
