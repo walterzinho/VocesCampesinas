@@ -1,0 +1,502 @@
+   501→  // Login screen
+   502→  if (!isAuthenticated) {
+   503→    return (
+   504→      <div className="min-h-screen bg-[#17202A] flex items-center justify-center p-4">
+   505→        <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+   506→          <button
+   507→            onClick={onBack}
+   508→            className="absolute top-4 left-4 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+   509→          >
+   510→            <ArrowLeft className="w-4 h-4 text-white/60" />
+   511→          </button>
+   512→
+   513→          <div className="flex flex-col items-center mb-6">
+   514→            <div className="w-16 h-16 rounded-full bg-[#e48d2a]/10 flex items-center justify-center mb-3">
+   515→              <Shield className="w-8 h-8 text-[#e48d2a]" />
+   516→            </div>
+   517→            <h2 className="text-xl font-bold text-white">Panel Admin</h2>
+   518→            <p className="text-sm text-white/40 mt-1">Voces Campesinas</p>
+   519→          </div>
+   520→
+   521→          <div className="space-y-4">
+   522→            <div className="relative">
+   523→              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+   524→              <Input
+   525→                type="password"
+   526→                placeholder="Contraseña de administrador"
+   527→                value={password}
+   528→                onChange={e => setPassword(e.target.value)}
+   529→                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+   530→                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#e48d2a]/50"
+   531→              />
+   532→            </div>
+   533→            <Button
+   534→              onClick={handleLogin}
+   535→              disabled={loading || !password}
+   536→              className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] font-semibold"
+   537→            >
+   538→              {loading ? 'Verificando...' : (
+   539→                <span className="flex items-center gap-2">
+   540→                  <LogIn className="w-4 h-4" /> Ingresar
+   541→                </span>
+   542→              )}
+   543→            </Button>
+   544→          </div>
+   545→        </div>
+   546→      </div>
+   547→    );
+   548→  }
+   549→
+   550→  const unreadRequests = songRequests.filter(r => !r.isRead).length;
+   551→
+   552→  // Admin Dashboard
+   553→  return (
+   554→    <div className="min-h-screen bg-[#17202A] text-white">
+   555→      {/* Header */}
+   556→      <header className="sticky top-0 z-50 bg-[#17202A]/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
+   557→        <div className="max-w-4xl mx-auto flex items-center justify-between">
+   558→          <div className="flex items-center gap-3">
+   559→            <button
+   560→              onClick={onBack}
+   561→              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+   562→              title="Volver al reproductor"
+   563→            >
+   564→              <ArrowLeft className="w-4 h-4 text-white/60" />
+   565→            </button>
+   566→            <div className="w-8 h-8 rounded-lg bg-[#e48d2a] flex items-center justify-center">
+   567→              <Radio className="w-4 h-4 text-[#17202A]" />
+   568→            </div>
+   569→            <div>
+   570→              <h1 className="text-sm font-bold">Panel de Administración</h1>
+   571→              <p className="text-[10px] text-white/40">Voces Campesinas</p>
+   572→            </div>
+   573→          </div>
+   574→          <Button
+   575→            variant="ghost"
+   576→            size="sm"
+   577→            onClick={() => { setIsAuthenticated(false); setPassword(''); }}
+   578→            className="text-white/50 hover:text-white hover:bg-white/5"
+   579→          >
+   580→            <LogOut className="w-4 h-4 mr-1" /> Salir
+   581→          </Button>
+   582→        </div>
+   583→      </header>
+   584→
+   585→      <main className="max-w-4xl mx-auto p-4 pb-20">
+   586→        {/* Stats */}
+   587→        <div className="grid grid-cols-4 gap-3 mb-6">
+   588→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   589→            <p className="text-2xl font-bold text-[#e48d2a]">{Object.keys(groupedPrograms).length}</p>
+   590→            <p className="text-[10px] text-white/40">Programas</p>
+   591→          </div>
+   592→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   593→            <p className="text-2xl font-bold text-[#e48d2a]">{messages.filter(m => m.isActive).length}</p>
+   594→            <p className="text-[10px] text-white/40">Info Activos</p>
+   595→          </div>
+   596→          <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative">
+   597→            <p className="text-2xl font-bold text-[#e48d2a]">{songRequests.length}</p>
+   598→            <p className="text-[10px] text-white/40">Peticiones</p>
+   599→            {unreadRequests > 0 && (
+   600→              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center">{unreadRequests}</span>
+   601→            )}
+   602→          </div>
+   603→          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+   604→            <p className="text-2xl font-bold text-[#e48d2a]">{logs.length}</p>
+   605→            <p className="text-[10px] text-white/40">Actividad</p>
+   606→          </div>
+   607→        </div>
+   608→
+   609→        <Tabs defaultValue="programs" className="w-full">
+   610→          <TabsList className="w-full bg-white/5 border border-white/10 rounded-xl h-auto p-1">
+   611→            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   612→              <Clock className="w-3.5 h-3.5 mr-1" /> Programación
+   613→            </TabsTrigger>
+   614→            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   615→              <Bell className="w-3.5 h-3.5 mr-1" /> Información
+   616→            </TabsTrigger>
+   617→            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg relative">
+   618→              <Send className="w-3.5 h-3.5 mr-1" /> Peticiones
+   619→              {unreadRequests > 0 && (
+   620→                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full">{unreadRequests}</span>
+   621→              )}
+   622→            </TabsTrigger>
+   623→            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   624→              <Settings className="w-3.5 h-3.5 mr-1" /> Config
+   625→            </TabsTrigger>
+   626→            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+   627→              <Play className="w-3.5 h-3.5 mr-1" /> Videos
+   628→            </TabsTrigger>
+   629→          </TabsList>
+   630→
+   631→          {/* PROGRAMS TAB */}
+   632→          <TabsContent value="programs" className="mt-4">
+   633→            <div className="flex items-center justify-between mb-3">
+   634→              <h3 className="text-sm font-semibold text-white/70">Todos los Programas</h3>
+   635→              <Dialog open={programDialog} onOpenChange={setProgramDialog}>
+   636→                <DialogTrigger asChild>
+   637→                  <Button
+   638→                    size="sm"
+   639→                    onClick={openNewProgram}
+   640→                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+   641→                  >
+   642→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   643→                  </Button>
+   644→                </DialogTrigger>
+   645→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
+   646→                  <DialogHeader>
+   647→                    <DialogTitle className="text-white">
+   648→                      {isEditingExisting ? 'Editar Programa' : 'Nuevo Programa'}
+   649→                    </DialogTitle>
+   650→                  </DialogHeader>
+   651→                  <div className="space-y-3 mt-2">
+   652→                    <Input
+   653→                      placeholder="Nombre del programa *"
+   654→                      value={editingProgram.name || ''}
+   655→                      onChange={e => setEditingProgram(prev => ({ ...prev, name: e.target.value }))}
+   656→                      className="bg-white/5 border-white/10 text-white"
+   657→                    />
+   658→                    <Input
+   659→                      placeholder="Conductor"
+   660→                      value={editingProgram.host || ''}
+   661→                      onChange={e => setEditingProgram(prev => ({ ...prev, host: e.target.value }))}
+   662→                      className="bg-white/5 border-white/10 text-white"
+   663→                    />
+   664→                    <Textarea
+   665→                      placeholder="Descripción"
+   666→                      value={editingProgram.description || ''}
+   667→                      onChange={e => setEditingProgram(prev => ({ ...prev, description: e.target.value }))}
+   668→                      className="bg-white/5 border-white/10 text-white min-h-[60px]"
+   669→                    />
+   670→
+   671→                    {/* Day Selection with Quick Selects */}
+   672→                    <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+   673→                      <label className="text-xs text-white/60 font-medium mb-2 block">Días de emisión *</label>
+   674→
+   675→                      {/* Quick select buttons */}
+   676→                      <div className="flex gap-1.5 mb-3">
+   677→                        <button
+   678→                          type="button"
+   679→                          onClick={toggleAllDays}
+   680→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   681→                            isQuickActive([0, 1, 2, 3, 4, 5, 6])
+   682→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   683→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   684→                          }`}
+   685→                        >
+   686→                          Todos
+   687→                        </button>
+   688→                        <button
+   689→                          type="button"
+   690→                          onClick={setWeekdays}
+   691→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   692→                            isQuickActive([1, 2, 3, 4, 5])
+   693→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   694→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   695→                          }`}
+   696→                        >
+   697→                          Lun - Vie
+   698→                        </button>
+   699→                        <button
+   700→                          type="button"
+   701→                          onClick={setWeekend}
+   702→                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+   703→                            isQuickActive([0, 6])
+   704→                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
+   705→                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+   706→                          }`}
+   707→                        >
+   708→                          Fin de Semana
+   709→                        </button>
+   710→                      </div>
+   711→
+   712→                      {/* Individual day buttons */}
+   713→                      <div className="grid grid-cols-7 gap-1">
+   714→                        {DAY_NAMES.map((day, idx) => (
+   715→                          <button
+   716→                            key={idx}
+   717→                            type="button"
+   718→                            onClick={() => toggleDay(idx)}
+   719→                            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-all border ${
+   720→                              selectedDays.includes(idx)
+   721→                                ? 'bg-[#e48d2a]/15 border-[#e48d2a]/40 text-[#e48d2a]'
+   722→                                : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'
+   723→                            }`}
+   724→                          >
+   725→                            {selectedDays.includes(idx) && <Check className="w-3 h-3" />}
+   726→                            <span>{day}</span>
+   727→                          </button>
+   728→                        ))}
+   729→                      </div>
+   730→
+   731→                      {selectedDays.length > 0 && (
+   732→                        <p className="text-[10px] text-white/25 mt-2 text-center">
+   733→                          Se creará {selectedDays.length === 1 ? '1 entrada' : `${selectedDays.length} entradas`} — {selectedDays.map(d => DAY_FULL_NAMES[d]).join(', ')}
+   734→                        </p>
+   735→                      )}
+   736→                    </div>
+   737→
+   738→                    <div>
+   739→                      <label className="text-[10px] text-white/40 mb-1 block">Género</label>
+   740→                      <Input
+   741→                        placeholder="Ej: Folclor"
+   742→                        value={editingProgram.genre || ''}
+   743→                        onChange={e => setEditingProgram(prev => ({ ...prev, genre: e.target.value }))}
+   744→                        className="bg-white/5 border-white/10 text-white text-xs"
+   745→                      />
+   746→                    </div>
+   747→                    {/* Image Upload */}
+   748→                    <div>
+   749→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen de fondo</label>
+   750→                      <div className="flex items-center gap-2">
+   751→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   752→                          <span className="text-xs text-white/50 truncate">
+   753→                            {editingProgram.imageUrl || 'Seleccionar imagen...'}
+   754→                          </span>
+   755→                          <input
+   756→                            type="file"
+   757→                            accept="image/*"
+   758→                            onChange={handleImageUpload}
+   759→                            className="hidden"
+   760→                          />
+   761→                        </label>
+   762→                        {uploadingImage && (
+   763→                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+   764→                        )}
+   765→                        {editingProgram.imageUrl && (
+   766→                          <button
+   767→                            onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))}
+   768→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   769→                            title="Quitar imagen"
+   770→                          >
+   771→                            <X className="w-3.5 h-3.5" />
+   772→                          </button>
+   773→                        )}
+   774→                      </div>
+   775→                      {editingProgram.imageUrl && (
+   776→                        <div className="mt-1.5 rounded-lg overflow-hidden h-16 bg-white/5">
+   777→                          <img src={editingProgram.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingProgram.imageUrl.slice('/uploads'.length)}` : editingProgram.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   778→                        </div>
+   779→                      )}
+   780→                    </div>
+   781→                    <div className="grid grid-cols-2 gap-3">
+   782→                      <div>
+   783→                        <label className="text-[10px] text-white/40 mb-1 block">Hora inicio *</label>
+   784→                        <Input
+   785→                          type="time"
+   786→                          value={editingProgram.startTime || ''}
+   787→                          onChange={e => setEditingProgram(prev => ({ ...prev, startTime: e.target.value }))}
+   788→                          className="bg-white/5 border-white/10 text-white text-xs"
+   789→                        />
+   790→                      </div>
+   791→                      <div>
+   792→                        <label className="text-[10px] text-white/40 mb-1 block">Hora fin *</label>
+   793→                        <Input
+   794→                          type="time"
+   795→                          value={editingProgram.endTime || ''}
+   796→                          onChange={e => setEditingProgram(prev => ({ ...prev, endTime: e.target.value }))}
+   797→                          className="bg-white/5 border-white/10 text-white text-xs"
+   798→                        />
+   799→                      </div>
+   800→                    </div>
+   801→                    <div className="flex items-center gap-2">
+   802→                      <Switch
+   803→                        checked={editingProgram.isActive ?? true}
+   804→                        onCheckedChange={v => setEditingProgram(prev => ({ ...prev, isActive: v }))}
+   805→                      />
+   806→                      <span className="text-xs text-white/60">Programa activo</span>
+   807→                    </div>
+   808→                    <Button onClick={saveProgram} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+   809→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   810→                    </Button>
+   811→                  </div>
+   812→                </DialogContent>
+   813→              </Dialog>
+   814→            </div>
+   815→
+   816→            <div className="space-y-3 max-h-[500px] overflow-y-auto hide-scrollbar">
+   817→              {Object.keys(groupedPrograms).length === 0 ? (
+   818→                <p className="text-center text-white/30 text-sm py-8">No hay programas creados</p>
+   819→              ) : (
+   820→                Object.entries(groupedPrograms).map(([name, progs]) => {
+   821→                  const firstProg = progs[0];
+   822→                  const dayCount = progs.length;
+   823→                  const allDays = progs.every(p => p.isActive);
+   824→                  const dayLabels = progs
+   825→                    .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+   826→                    .map(p => DAY_NAMES[p.dayOfWeek]);
+   827→
+   828→                  return (
+   829→                    <div key={name} className={`p-3 rounded-xl border transition-all ${allDays ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   830→                      <div className="flex items-start justify-between">
+   831→                        <div className="flex-1 min-w-0">
+   832→                          <div className="flex items-center gap-2 flex-wrap">
+   833→                            <h4 className="text-sm font-semibold text-white truncate">{name}</h4>
+   834→                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+   835→                              dayCount === 7
+   836→                                ? 'bg-[#e48d2a]/20 text-[#e48d2a]'
+   837→                                : 'bg-white/10 text-white/40'
+   838→                            }`}>
+   839→                              {dayCount === 7 ? 'Todos los días' : dayLabels.join(' · ')}
+   840→                            </span>
+   841→                          </div>
+   842→                          <p className="text-[11px] text-white/40 mt-0.5">
+   843→                            {firstProg.startTime} - {firstProg.endTime}
+   844→                            {firstProg.host && ` | ${firstProg.host}`}
+   845→                            {firstProg.genre && ` | ${firstProg.genre}`}
+   846→                          </p>
+   847→                        </div>
+   848→                        <div className="flex items-center gap-1">
+   849→                          <Switch
+   850→                            checked={allDays}
+   851→                            onCheckedChange={() => toggleProgramActive(firstProg)}
+   852→                            className="scale-75"
+   853→                          />
+   854→                          <Button
+   855→                            variant="ghost"
+   856→                            size="sm"
+   857→                            onClick={() => openEditProgram(firstProg)}
+   858→                            className="h-7 w-7 p-0 text-white/40 hover:text-white"
+   859→                            title="Editar"
+   860→                          >
+   861→                            <Settings className="w-3.5 h-3.5" />
+   862→                          </Button>
+   863→                          <Button
+   864→                            variant="ghost"
+   865→                            size="sm"
+   866→                            onClick={() => deleteProgram(firstProg.id, name)}
+   867→                            className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+   868→                            title="Eliminar"
+   869→                          >
+   870→                            <Trash2 className="w-3.5 h-3.5" />
+   871→                          </Button>
+   872→                        </div>
+   873→                      </div>
+   874→                    </div>
+   875→                  );
+   876→                })
+   877→              )}
+   878→            </div>
+   879→          </TabsContent>
+   880→
+   881→          {/* MESSAGES TAB (renamed to Información) */}
+   882→          <TabsContent value="messages" className="mt-4">
+   883→            <div className="flex items-center justify-between mb-3">
+   884→              <h3 className="text-sm font-semibold text-white/70">Información y Anuncios</h3>
+   885→              <Dialog open={messageDialog} onOpenChange={setMessageDialog}>
+   886→                <DialogTrigger asChild>
+   887→                  <Button
+   888→                    size="sm"
+   889→                    onClick={() => setEditingMessage({ type: 'info', priority: 0, isActive: true })}
+   890→                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+   891→                  >
+   892→                    <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
+   893→                  </Button>
+   894→                </DialogTrigger>
+   895→                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
+   896→                  <DialogHeader>
+   897→                    <DialogTitle className="text-white">
+   898→                      {editingMessage.id ? 'Editar Información' : 'Nueva Información'}
+   899→                    </DialogTitle>
+   900→                  </DialogHeader>
+   901→                  <div className="space-y-3 mt-2">
+   902→                    <Textarea
+   903→                      placeholder="Contenido del mensaje *"
+   904→                      value={editingMessage.content || ''}
+   905→                      onChange={e => setEditingMessage(prev => ({ ...prev, content: e.target.value }))}
+   906→                      className="bg-white/5 border-white/10 text-white min-h-[80px]"
+   907→                    />
+   908→                    <div className="grid grid-cols-2 gap-3">
+   909→                      <div>
+   910→                        <label className="text-[10px] text-white/40 mb-1 block">Tipo</label>
+   911→                        <Select
+   912→                          value={editingMessage.type || 'info'}
+   913→                          onValueChange={v => setEditingMessage(prev => ({ ...prev, type: v }))}
+   914→                        >
+   915→                          <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
+   916→                            <SelectValue />
+   917→                          </SelectTrigger>
+   918→                          <SelectContent className="bg-[#1a2332] border-white/10">
+   919→                            <SelectItem value="info" className="text-white text-xs">Información</SelectItem>
+   920→                            <SelectItem value="alert" className="text-white text-xs">Alerta</SelectItem>
+   921→                            <SelectItem value="promotion" className="text-white text-xs">Promoción</SelectItem>
+   922→                          </SelectContent>
+   923→                        </Select>
+   924→                      </div>
+   925→                      <div>
+   926→                        <label className="text-[10px] text-white/40 mb-1 block">Prioridad (0-10)</label>
+   927→                        <Input
+   928→                          type="number"
+   929→                          min="0"
+   930→                          max="10"
+   931→                          value={editingMessage.priority ?? 0}
+   932→                          onChange={e => setEditingMessage(prev => ({ ...prev, priority: parseInt(e.target.value) || 0 }))}
+   933→                          className="bg-white/5 border-white/10 text-white text-xs"
+   934→                        />
+   935→                      </div>
+   936→                    </div>
+   937→                    {/* Image Upload for message */}
+   938→                    <div>
+   939→                      <label className="text-[10px] text-white/40 mb-1 block">Imagen (1:1 recomendado)</label>
+   940→                      <div className="flex items-center gap-2">
+   941→                        <label className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-white/20 transition-colors">
+   942→                          <ImageIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+   943→                          <span className="text-xs text-white/50 truncate">
+   944→                            {editingMessage.imageUrl
+   945→                              ? editingMessage.imageUrl.replace(/^\/api\/uploads\//, '').replace('/uploads/', '')
+   946→                              : 'Seleccionar imagen...'}
+   947→                          </span>
+   948→                          <input
+   949→                            type="file"
+   950→                            accept="image/*"
+   951→                            onChange={handleMessageImageUpload}
+   952→                            className="hidden"
+   953→                          />
+   954→                        </label>
+   955→                        {uploadingMsgImage && (
+   956→                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+   957→                        )}
+   958→                        {editingMessage.imageUrl && (
+   959→                          <button
+   960→                            onClick={() => setEditingMessage(prev => ({ ...prev, imageUrl: '' }))}
+   961→                            className="text-white/30 hover:text-red-400 transition-colors p-1"
+   962→                            title="Quitar imagen"
+   963→                          >
+   964→                            <X className="w-3.5 h-3.5" />
+   965→                          </button>
+   966→                        )}
+   967→                      </div>
+   968→                      {editingMessage.imageUrl && (
+   969→                        <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+   970→                          <img src={editingMessage.imageUrl?.startsWith('/uploads/') ? `/api/uploads${editingMessage.imageUrl.slice('/uploads'.length)}` : editingMessage.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+   971→                        </div>
+   972→                      )}
+   973→                    </div>
+   974→                    <div className="flex items-center gap-2">
+   975→                      <Switch
+   976→                        checked={editingMessage.isActive ?? true}
+   977→                        onCheckedChange={v => setEditingMessage(prev => ({ ...prev, isActive: v }))}
+   978→                      />
+   979→                      <span className="text-xs text-white/60">Activo</span>
+   980→                    </div>
+   981→                    <Button onClick={saveMessage} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+   982→                      <Save className="w-4 h-4 mr-1" /> Guardar
+   983→                    </Button>
+   984→                  </div>
+   985→                </DialogContent>
+   986→              </Dialog>
+   987→            </div>
+   988→
+   989→            <div className="space-y-2 max-h-[500px] overflow-y-auto hide-scrollbar">
+   990→              {messages.length === 0 ? (
+   991→                <p className="text-center text-white/30 text-sm py-8">No hay mensajes de información</p>
+   992→              ) : (
+   993→                messages.map(msg => (
+   994→                  <div key={msg.id} className={`p-3 rounded-xl border ${msg.isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+   995→                    <div className="flex items-start gap-3">
+   996→                      {/* Thumbnail */}
+   997→                      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+   998→                        {msg.imageUrl ? (
+   999→                          <img src={msg.imageUrl?.startsWith('/uploads/') ? `/api/uploads${msg.imageUrl.slice('/uploads'.length)}` : msg.imageUrl} alt="" className="w-full h-full object-cover" />
+  1000→                        ) : (
+
+[showing lines 501-1000 of 1500; use offset=1001 with limit to continue reading]
