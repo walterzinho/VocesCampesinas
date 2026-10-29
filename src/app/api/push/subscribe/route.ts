@@ -1,14 +1,6 @@
 import { db } from '@/lib/db';
+import { verifyAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-
-async function verifyAdmin(request: NextRequest): Promise<boolean> {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return false;
-  const password = authHeader.replace('Bearer ', '');
-  const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });
-  if (!setting) return false;
-  return password === setting.value;
-}
 
 // GET - count subscribers (admin)
 export async function GET(request: NextRequest) {

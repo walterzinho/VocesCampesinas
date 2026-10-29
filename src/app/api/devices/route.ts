@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { verifyAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 function detectPlatform(ua: string): string {
@@ -40,15 +41,6 @@ export async function POST(request: NextRequest) {
     console.error('Error registrando dispositivo:', error);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
-}
-
-async function verifyAdmin(request: NextRequest): Promise<boolean> {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return false;
-  const password = authHeader.replace('Bearer ', '');
-  const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });
-  if (!setting) return false;
-  return password === setting.value;
 }
 
 export async function GET(request: NextRequest) {

@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return false;
-  const password = authHeader.replace('Bearer ', '');
-  const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });
-  if (!setting) return false;
-  return password === setting.value;
-}
+import { verifyAdmin } from '@/lib/auth';
 
 // GET /api/videos — admin gets all, public gets only active
 export async function GET(req: NextRequest) {

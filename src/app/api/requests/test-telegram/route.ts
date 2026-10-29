@@ -1,15 +1,7 @@
 import { db } from '@/lib/db';
+import { verifyAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTelegramNotification } from '@/lib/telegram';
-
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return false;
-  const password = authHeader.replace('Bearer ', '');
-  const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });
-  if (!setting) return false;
-  return password === setting.value;
-}
 
 // POST /api/requests/test-telegram - admin (test notification)
 export async function POST(request: NextRequest) {

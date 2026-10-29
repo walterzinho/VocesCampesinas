@@ -1,19 +1,11 @@
 import { db } from '@/lib/db';
+import { verifyAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return false;
-  const password = authHeader.replace('Bearer ', '');
-  const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });
-  if (!setting) return false;
-  return password === setting.value;
-}
 
 export async function POST(request: NextRequest) {
   const isAdmin = await verifyAdmin(request);

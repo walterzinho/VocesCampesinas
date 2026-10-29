@@ -1,16 +1,8 @@
 import { db } from '@/lib/db';
+import { verifyAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Helper to verify admin
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return null;
-  const password = authHeader.replace('Bearer ', '');
-  const setting = await db.settings.findUnique({ where: { key: 'adminPassword' } });
-  if (!setting) return null;
-  return password === setting.value;
-}
-
 // GET /api/programs - public
 export async function GET() {
   try {
