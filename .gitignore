@@ -1,55 +1,78 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ===== Dependencias =====
+node_modules/
+.pnp
+.pnp.js
+bun.lockb
 
-# dependencies
-node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# ===== Build de Next.js =====
+.next/
+out/
+build/
+dist/
+next-env.d.ts
 
-# testing
-/coverage
+# ===== Base de datos (¡NUNCA commitear!) =====
+db/*.db
+db/*.db-journal
+prisma/*.db
+prisma/*.db-journal
+*.sqlite
+*.sqlite3
 
-# next.js
-/.next/
-/out/
+# ===== Archivos de usuario subidos =====
+public/uploads/
 
-# production
-/build
+# ===== Entorno y secretos =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production
+.env*.local
 
-# misc
-.DS_Store
-*.pem
-
-# debug
+# ===== Logs =====
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-
-# env files (keep .env.example)
-.env*
-!.env.example
-
-# vercel
-.vercel
-
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-local-*
-.claude
-.z-ai-config
-*.log
 dev.log
-dev.out.log
-test
-prompt
 
-server.log
-# Skills directory
-/skills/tool-results/
+# ===== Sistema operativo =====
+.DS_Store
+Thumbs.db
+
+# ===== Artefactos del workspace de desarrollo (Z.ai / agente) =====
+# Estos archivos eran snapshots del asistente de código y no deben
+# vivir en el repo. Si necesitas conservarlos, muévelos a una carpeta
+# local fuera del control de versiones.
+skills/
+tool-results/
+mini-services/
+examples/
+download/
+worklog.md
+agent-ctx/
+repo_*.json
+*_route.json
+*_live.json
+admin-panel.json
+admin-route.json
+api_root_route.json
+app_*.json
+caddyfile.json
+docker-compose.json
+Dockerfile.json
+entrypoint.json
+main_page.json
+schedule-view.json
+schema.prisma.json
+package.json.raw
+env_example.json
+upload-route.json
+uploads-route.json
+programs-route.json
+programs_all_route.json
+
+# ===== Documentos generados en pruebas =====
+*.zip
+*.tgz
