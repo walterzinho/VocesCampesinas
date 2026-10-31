@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Tipografía MD2: Roboto 400 (regular), 500 (medium), 700 (bold)
+const roboto = Roboto({
+  variable: "--font-roboto",
   subsets: ["latin"],
+  weight: ["400", "500", "700"],
 });
 
 export const viewport: Viewport = {
@@ -13,7 +15,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#17202A",
+  themeColor: "#121212",
 };
 
 export const metadata: Metadata = {
@@ -47,7 +49,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#17202A" id="theme-color-meta" />
+        <meta name="theme-color" content="#121212" id="theme-color-meta" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -60,7 +62,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${geistSans.variable} antialiased`} style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", margin: 0, padding: 0, overflow: 'hidden', height: '100%', width: '100%' }}>
+      <body className={`${roboto.variable} antialiased`} style={{ fontFamily: "var(--font-roboto), 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif", margin: 0, padding: 0, overflow: 'hidden', height: '100%', width: '100%' }}>
         {children}
         <Toaster />
       </body>

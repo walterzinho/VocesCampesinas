@@ -8,6 +8,7 @@ import SongRequestForm from '@/components/radio/song-request-form';
 import BlogSection from '@/components/radio/blog-section';
 import VideoSection from '@/components/radio/video-section';
 import AdminPanel from '@/components/radio/admin-panel';
+import { Slot, buildSlots, findCurrentSlot, findNextSlot } from '@/lib/schedule-utils';
 import { Radio, CalendarDays, Shield, Share2, Download, WifiOff, Music, Newspaper, Clock, Sun, Moon, Bell, BellOff, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,19 +26,8 @@ interface StationSettings {
   darkColor: string;
   blogUrl: string;
   offAirName: string;
+  offAirSlogan: string;
   offAirImageUrl: string;
-}
-
-interface Program {
-  id: string;
-  name: string;
-  host: string | null;
-  startTime: string;
-  endTime: string;
-  dayOfWeek: number;
-  imageUrl?: string | null;
-  playerImageUrl?: string | null;
-  isNextDay?: boolean;
 }
 
 type View = 'player' | 'schedule' | 'news' | 'admin';
@@ -51,10 +41,10 @@ export default function HomePage() {
     stationSlogan: 'El Campo Nos Une',
     facebookUrl: '', instagramUrl: '', whatsappUrl: '', youtubeUrl: '', tiktokUrl: '', xUrl: '',
     primaryColor: '#e48d2a', darkColor: '#17202A', blogUrl: '',
-    offAirName: 'Música de la Tierrita', offAirImageUrl: '',
+    offAirName: 'Música de la Tierrita', offAirSlogan: '', offAirImageUrl: '',
   });
-  const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
-  const [nextProgram, setNextProgram] = useState<Program | null>(null);
+  const [currentProgram, setCurrentProgram] = useState<Slot | null>(null);
+  const [nextProgram, setNextProgram] = useState<Slot | null>(null);
   const [view, setView] = useState<View>('player');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isOnline, setIsOnline] = useState(true);
@@ -72,60 +62,22 @@ export default function HomePage() {
   // Apply theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#17202A' : '#dedede');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#121212' : '#FAFAFA');
     localStorage.setItem('vc-theme', theme);
   }, [theme]);
 
-  // Load programs and determine current/next
+  // Load programs and determine current/next (multi-horario)
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const res = await fetch('/api/programs/all');
         if (res.ok && !cancelled) {
-          const programs: Program[] = await res.json();
+          const programs = await res.json();
+          const slots = buildSlots(programs);
           const now = new Date();
-          const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-          const today = now.getDay();
-
-          const current = programs.find(
-            p => p.dayOfWeek === today && currentTime >= p.startTime && currentTime < p.endTime
-          );
-          setCurrentProgram(current || null);
-
-          // Find next program today
-          const upcomingToday = programs
-            .filter(p => p.dayOfWeek === today && p.startTime > currentTime && p.isActive)
-            .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-          if (upcomingToday.length > 0) {
-            setNextProgram(upcomingToday[0]);
-          } else {
-            // No more programs today — find first program of next day(s)
-            for (let d = 1; d <= 7; d++) {
-              const nextDay = (today + d) % 7;
-              const nextDayPrograms = programs
-                .filter(p => p.dayOfWeek === nextDay && p.isActive)
-                .sort((a, b) => a.startTime.localeCompare(b.startTime));
-              if (nextDayPrograms.length > 0) {
-                setNextProgram({ ...nextDayPrograms[0], isNextDay: true });
-                break;
-              }
-            }
-            if (!cancelled) {
-              // Re-check in case the loop didn't set anything
-              const hasAny = await (async () => {
-                for (let d = 1; d <= 7; d++) {
-                  const nd = (today + d) % 7;
-                  const ndp = programs.filter(p => p.dayOfWeek === nd && p.isActive).sort((a, b) => a.startTime.localeCompare(b.startTime));
-                  if (ndp.length > 0) return { ...ndp[0], isNextDay: true };
-                }
-                return null;
-              })();
-              if (hasAny) setNextProgram(hasAny);
-              else setNextProgram(null);
-            }
-          }
+          setCurrentProgram(findCurrentSlot(slots, now));
+          setNextProgram(findNextSlot(slots, now));
         }
       } catch { /* ignore */ }
     };
@@ -321,28 +273,28 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating install button */}
+      {/* Floating install button — FAB MD2 (56dp) */}
       {showInstallBtn && (
-        <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-app-accent text-app-bg flex items-center justify-center shadow-xl hover:bg-app-accent-dk transition-all active:scale-90 animate-bounce" title="Instalar app">
-          <Download className="w-5 h-5" />
+        <button onClick={handleInstall} className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-app-accent text-app-bg flex items-center justify-center elev-6 hover:bg-app-accent-dk transition-all active:scale-90" title="Instalar app">
+          <Download className="w-6 h-6" />
         </button>
       )}
 
-      {/* Header */}
+      {/* Header — Top App Bar MD2 */}
       <header className="shrink-0 text-center pt-5 pb-2 px-4 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt={settings.stationName} className="w-9 h-9 rounded-lg object-contain" />
+            <img src="/logo.png" alt={settings.stationName} className="w-9 h-9 rounded object-contain" />
             <div>
-              <h1 className="text-base font-bold text-app-text tracking-tight leading-tight">{settings.stationName}</h1>
-              <p className="text-[10px] text-app-accent/70 font-medium">{settings.stationSlogan}</p>
+              <h1 className="text-base font-medium text-app-text tracking-tight leading-tight">{settings.stationName}</h1>
+              <p className="text-[10px] text-app-accent/80 font-medium">{settings.stationSlogan}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <button onClick={() => setView('admin')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title="Administración">
+            <button onClick={() => setView('admin')} className="p-2 rounded-full bg-app-surface hover:bg-app-surface-h transition-colors" title="Administración">
               <Shield className="w-4 h-4 text-app-tdim" />
             </button>
-            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl bg-app-surface hover:bg-app-surface-h transition-colors" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+            <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-2 rounded-full bg-app-surface hover:bg-app-surface-h transition-colors" title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
               {theme === 'dark' ? <Sun className="w-4 h-4 text-app-t3" /> : <Moon className="w-4 h-4 text-app-t3" />}
             </button>
           </div>
@@ -351,7 +303,7 @@ export default function HomePage() {
 
       {/* ===== AHORA SUENA + PLAYER — ALWAYS VISIBLE ===== */}
       <div className="shrink-0 px-4 mb-3">
-        <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: '140px' }}>
+        <div className="relative rounded-lg overflow-hidden elev-2" style={{ minHeight: '140px' }}>
           {/* Background image */}
           <div className="absolute inset-0 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${backgroundImageUrl})` }} />
           {/* Gradient overlays */}
@@ -369,6 +321,9 @@ export default function HomePage() {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                   </span>
                   <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider">Ahora al Aire</span>
+                  {currentProgram.isRerun && (
+                    <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/15 text-white/70 font-bold uppercase tracking-wider">Reemisión</span>
+                  )}
                 </div>
                 <h3 className="text-lg font-bold text-white leading-tight">{currentProgram.name}</h3>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -402,7 +357,7 @@ export default function HomePage() {
           <motion.main key="player" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar relative z-10">
             {/* Siguiente Programa */}
             <div className="px-4 mb-3">
-              <div className="p-3 rounded-xl bg-app-surface border border-app-bdr">
+              <div className="p-3 rounded-lg bg-app-surface elev-1">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-app-t3" />
                   <span className="text-[10px] font-bold text-app-t3 uppercase tracking-wider">Siguiente Programa</span>
@@ -411,9 +366,14 @@ export default function HomePage() {
                   <div>
                     <h4 className="text-sm font-semibold text-app-text">{nextProgram.name}</h4>
                     <p className="text-[11px] text-app-t3 mt-0.5">
-                      {nextProgram.isNextDay && (
-                        <span className="inline-block px-1.5 py-0.5 rounded-md bg-[#e48d2a]/20 text-[#e48d2a] text-[10px] font-bold mr-1.5">
+                      {nextProgram.dayOfWeek !== new Date().getDay() && (
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-app-accent/20 text-app-accent text-[10px] font-bold mr-1.5">
                           {DAY_NAMES[nextProgram.dayOfWeek]}
+                        </span>
+                      )}
+                      {nextProgram.isRerun && (
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-app-surface-h text-app-t2 text-[10px] font-bold mr-1.5">
+                          Reemisión
                         </span>
                       )}
                       {nextProgram.startTime} - {nextProgram.endTime}
@@ -497,12 +457,12 @@ export default function HomePage() {
         )}
       </AnimatePresence>
 
-      {/* Bottom Navigation */}
-      <nav className="shrink-0 bg-app-bg/95 backdrop-blur-lg border-t border-app-bdr pb-[env(safe-area-inset-bottom)] relative z-10">
+      {/* Bottom Navigation — MD2 (superficie con elevación) */}
+      <nav className="shrink-0 bg-app-surface border-t border-app-bdr-l pb-[env(safe-area-inset-bottom)] relative z-10 elev-8-top">
         <div className="flex items-center justify-around py-2 px-2">
           {([['player', Radio, 'En Vivo'], ['news', Newspaper, 'Noticias'], ['schedule', CalendarDays, 'Programación']] as const).map(([v, Icon, label]) => (
-            <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${view === v ? 'text-app-accent' : 'text-app-tdim hover:text-app-t3'}`}>
-              <Icon className="w-5 h-5" /><span className="text-[10px] font-medium">{label}</span>
+            <button key={v} onClick={() => setView(v as View)} className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all ${view === v ? 'text-app-accent bg-app-accent/10 font-medium' : 'text-app-tdim hover:text-app-t3'}`}>
+              <Icon className="w-5 h-5" /><span className="text-[10px]">{label}</span>
             </button>
           ))}
         </div>

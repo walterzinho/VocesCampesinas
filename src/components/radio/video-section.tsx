@@ -42,7 +42,7 @@ export default function VideoSection() {
     return (
       <div className="space-y-3 mb-4">
         <div className="animate-pulse h-4 bg-app-surface rounded w-32 mb-2" />
-        <div className="animate-pulse h-48 bg-app-surface rounded-2xl" />
+        <div className="animate-pulse h-48 bg-app-surface rounded-lg" />
       </div>
     );
   }
@@ -64,7 +64,7 @@ export default function VideoSection() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.06 }}
-            className="rounded-2xl bg-app-surface border border-app-bdr overflow-hidden"
+            className="rounded-lg bg-app-surface border border-app-bdr overflow-hidden"
           >
             {/* Video / Thumbnail */}
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>

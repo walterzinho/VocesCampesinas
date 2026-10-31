@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon, Play, Smartphone } from 'lucide-react';
+import { Lock, LogIn, LogOut, Radio, MessageSquare, Settings, Clock, Shield, Plus, Trash2, Save, ChevronDown, ChevronUp, X, Copy, Check, ArrowLeft, Music, Send, Heart, Bell, Eye, EyeOff, ImageIcon, Play, Smartphone, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,13 @@ import { toast } from 'sonner';
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAY_FULL_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
+interface ProgramScheduleRow {
+  dayOfWeek: number;
+  startTime: string;
+  durationMin: number;
+  isRerun: boolean;
+}
+
 interface Program {
   id: string;
   name: string;
@@ -22,6 +29,8 @@ interface Program {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
+  schedulesMigrated?: boolean;
+  schedules?: ProgramScheduleRow[];
   isActive: boolean;
   genre: string | null;
   sortOrder: number;
@@ -127,7 +136,13 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   const [programDialog, setProgramDialog] = useState(false);
   const [messageDialog, setMessageDialog] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Partial<Program>>({});
-  const [selectedDays, setSelectedDays] = useState<number[]>([new Date().getDay()]);
+  // Multi-horario: filas de horario del programa en edición
+  const [slotRows, setSlotRows] = useState<ProgramScheduleRow[]>([]);
+  // Agregar horarios en lote: días seleccionados + hora + duración
+  const [quickDays, setQuickDays] = useState<number[]>([]);
+  const [quickStart, setQuickStart] = useState('07:00');
+  const [quickDuration, setQuickDuration] = useState(60);
+  const [quickRerun, setQuickRerun] = useState(false);
   const [isEditingExisting, setIsEditingExisting] = useState(false);
   const [editingMessage, setEditingMessage] = useState<Partial<Message>>({});
   const [expandedLogs, setExpandedLogs] = useState(false);
@@ -211,22 +226,79 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     }
   }, [isAuthenticated, fetchAllData]);
 
-  // Quick day selection helpers
-  const setWeekdays = () => setSelectedDays([1, 2, 3, 4, 5]);
-  const setWeekend = () => setSelectedDays([0, 6]);
-  const toggleAllDays = () => {
-    if (selectedDays.length === 7) setSelectedDays([]);
-    else setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
+  // Selección rápida de días (para agregar horarios en lote)
+  const setQuickWeekdays = () => setQuickDays([1, 2, 3, 4, 5]);
+  const setQuickWeekend = () => setQuickDays([0, 6]);
+  const toggleQuickAllDays = () => {
+    if (quickDays.length === 7) setQuickDays([]);
+    else setQuickDays([0, 1, 2, 3, 4, 5, 6]);
   };
-  const toggleDay = (day: number) => {
-    setSelectedDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+  const toggleQuickDay = (day: number) => {
+    setQuickDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
     );
   };
-
   const isQuickActive = (days: number[]) => {
-    if (selectedDays.length !== days.length) return false;
-    return days.every(d => selectedDays.includes(d));
+    if (quickDays.length !== days.length) return false;
+    return days.every(d => quickDays.includes(d));
+  };
+
+  // Agregar filas de horario desde la selección rápida (un slot por día)
+  const addScheduleRows = () => {
+    if (quickDays.length === 0) {
+      toast.error('Selecciona al menos un día');
+      return;
+    }
+    if (!/^\d{1,2}:\d{2}$/.test(quickStart)) {
+      toast.error('Hora de inicio inválida');
+      return;
+    }
+    const duration = Math.min(Math.max(quickDuration || 60, 5), 1440);
+    const [h, m] = quickStart.split(':').map(Number);
+    const normStart = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    setSlotRows(prev => {
+      const next = [...prev];
+      for (const day of [...quickDays].sort((a, b) => a - b)) {
+        // Evitar duplicado exacto mismo día + hora
+        if (next.some(r => r.dayOfWeek === day && r.startTime === normStart)) continue;
+        next.push({ dayOfWeek: day, startTime: normStart, durationMin: duration, isRerun: quickRerun });
+      }
+      next.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime));
+      return next;
+    });
+    setQuickDays([]);
+  };
+
+  const updateSlotRow = (idx: number, patch: Partial<ProgramScheduleRow>) => {
+    setSlotRows(prev => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
+  const removeSlotRow = (idx: number) => {
+    setSlotRows(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // Clases de los chips de selección rápida (MD2: contorno, primario al activar)
+  const quickChipCls = (active: boolean) =>
+    `px-3 py-1.5 rounded-md text-[11px] font-medium transition-all border ${active ? 'bg-app-accent border-app-accent text-app-bg' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`;
+  const dayChipCls = (active: boolean) =>
+    `flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-md text-[11px] font-medium transition-all border ${active ? 'bg-app-accent/15 border-app-accent/40 text-app-accent' : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'}`;
+
+  // Resumen de horarios de un programa para la lista (agrupa días con igual hora/duración)
+  const slotSummary = (prog: Program) => {
+    const slots: ProgramScheduleRow[] = prog.schedules && prog.schedules.length > 0
+      ? prog.schedules
+      : (prog.startTime ? [{ dayOfWeek: prog.dayOfWeek, startTime: prog.startTime, durationMin: 60, isRerun: false }] : []);
+    const groups = new Map<string, number[]>();
+    for (const s of slots) {
+      const key = `${s.startTime}|${s.durationMin}|${s.isRerun ? 1 : 0}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(s.dayOfWeek);
+    }
+    return Array.from(groups.entries())
+      .map(([key, days]) => {
+        const [start, dur, rerun] = key.split('|');
+        return { start, dur: Number(dur), rerun: rerun === '1', days: days.sort((a, b) => a - b) };
+      })
+      .sort((a, b) => a.start.localeCompare(b.start));
   };
 
   // Image upload handler
@@ -329,14 +401,19 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     } catch { /* */ }
   };
 
-  // Program CRUD
+  // Program CRUD (multi-horario: 1 programa + N horarios)
   const saveProgram = async () => {
-    if (!editingProgram.name || !editingProgram.startTime || !editingProgram.endTime) {
-      toast.error('Completa los campos obligatorios');
+    if (!editingProgram.name) {
+      toast.error('Escribe el nombre del programa');
       return;
     }
-    if (selectedDays.length === 0) {
-      toast.error('Selecciona al menos un día');
+    if (slotRows.length === 0) {
+      toast.error('Agrega al menos un horario de emisión');
+      return;
+    }
+    const invalid = slotRows.find(r => !/^\d{1,2}:\d{2}$/.test(r.startTime) || !(r.durationMin >= 5));
+    if (invalid) {
+      toast.error('Hay un horario con hora o duración inválida');
       return;
     }
 
@@ -344,65 +421,61 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
       name: editingProgram.name,
       host: editingProgram.host || '',
       description: editingProgram.description || '',
-      startTime: editingProgram.startTime,
-      endTime: editingProgram.endTime,
       genre: editingProgram.genre || '',
       isActive: editingProgram.isActive ?? true,
       sortOrder: editingProgram.sortOrder ?? 0,
       imageUrl: editingProgram.imageUrl || '',
       playerImageUrl: editingProgram.playerImageUrl || '',
+      schedules: slotRows.map((r, i) => ({
+        dayOfWeek: r.dayOfWeek,
+        startTime: r.startTime,
+        durationMin: r.durationMin,
+        isRerun: r.isRerun,
+        sortOrder: i,
+      })),
     };
 
     try {
       let res;
-      if (isEditingExisting && editingProgram.id && selectedDays.length === 1) {
+      if (isEditingExisting && editingProgram.id) {
         res = await fetch('/api/programs', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', ...authHeader().headers },
-          body: JSON.stringify({ id: editingProgram.id, ...basePayload, dayOfWeek: selectedDays[0] }),
-        });
-      } else if (isEditingExisting) {
-        const oldName = editingProgram.name;
-        res = await fetch('/api/programs', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
-          body: JSON.stringify({
-            batchUpdateName: oldName,
-            days: selectedDays,
-            ...basePayload,
-          }),
+          body: JSON.stringify({ id: editingProgram.id, ...basePayload }),
         });
       } else {
         res = await fetch('/api/programs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeader().headers },
-          body: JSON.stringify({ ...basePayload, days: selectedDays }),
+          body: JSON.stringify(basePayload),
         });
       }
 
       if (res.ok) {
-        const dayLabel = selectedDays.length === 7 ? 'todos los días' : `${selectedDays.length} día(s)`;
-        toast.success(`${isEditingExisting ? 'Programa actualizado' : 'Programa creado'} para ${dayLabel}`);
+        toast.success(`${isEditingExisting ? 'Programa actualizado' : 'Programa creado'} · ${slotRows.length} horario${slotRows.length !== 1 ? 's' : ''}`);
         setProgramDialog(false);
         setEditingProgram({});
-        setSelectedDays([new Date().getDay()]);
+        setSlotRows([]);
+        setQuickDays([]);
         setIsEditingExisting(false);
         fetchAllData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || 'Error al guardar');
       }
     } catch {
       toast.error('Error al guardar');
     }
   };
 
-  const deleteProgram = async (id: string, name?: string) => {
+  const deleteProgram = async (id: string) => {
     try {
-      const params = name ? `?name=${encodeURIComponent(name)}` : `?id=${id}`;
-      const res = await fetch(`/api/programs${params}`, {
+      const res = await fetch(`/api/programs?id=${id}`, {
         method: 'DELETE',
         ...authHeader(),
       });
       if (res.ok) {
-        toast.success(name ? `"${name}" eliminado de todos los días` : 'Programa eliminado');
+        toast.success('Programa eliminado con todos sus horarios');
         fetchAllData();
       }
     } catch {
@@ -410,40 +483,48 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     }
   };
 
-  // Group programs by name for display
-  const groupedPrograms = programs.reduce((acc, prog) => {
-    const key = prog.name;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(prog);
-    return acc;
-  }, {} as Record<string, Program[]>);
-
   const openEditProgram = (prog: Program) => {
     setIsEditingExisting(true);
     setEditingProgram(prog);
-    const sameNamePrograms = programs.filter(p => p.name === prog.name);
-    setSelectedDays(sameNamePrograms.map(p => p.dayOfWeek));
+    // Cargar horarios del programa; fallback legacy si no tiene respaldo
+    if (prog.schedules && prog.schedules.length > 0) {
+      setSlotRows(prog.schedules.map(s => ({
+        dayOfWeek: s.dayOfWeek,
+        startTime: s.startTime,
+        durationMin: s.durationMin,
+        isRerun: s.isRerun,
+      })));
+    } else if (prog.startTime) {
+      // Legacy: calcular duración desde endTime
+      const [h1, m1] = prog.startTime.split(':').map(Number);
+      const [h2, m2] = (prog.endTime || '').includes(':') ? prog.endTime.split(':').map(Number) : [h1 + 1, m1];
+      let dur = h2 * 60 + m2 - (h1 * 60 + m1);
+      if (dur <= 0) dur += 24 * 60;
+      setSlotRows([{ dayOfWeek: prog.dayOfWeek, startTime: prog.startTime, durationMin: dur, isRerun: false }]);
+    } else {
+      setSlotRows([]);
+    }
     setProgramDialog(true);
   };
 
   const openNewProgram = () => {
     setIsEditingExisting(false);
     setEditingProgram({ isActive: true, sortOrder: 0 });
-    setSelectedDays([new Date().getDay()]);
+    setSlotRows([]);
+    setQuickDays([new Date().getDay()]);
+    setQuickStart('07:00');
+    setQuickDuration(60);
+    setQuickRerun(false);
     setProgramDialog(true);
   };
 
   const toggleProgramActive = async (prog: Program) => {
     try {
-      const sameName = programs.filter(p => p.name === prog.name);
-      const newActive = !prog.isActive;
-      for (const p of sameName) {
-        await fetch('/api/programs', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...authHeader().headers },
-          body: JSON.stringify({ id: p.id, isActive: newActive }),
-        });
-      }
+      await fetch('/api/programs', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader().headers },
+        body: JSON.stringify({ id: prog.id, isActive: !prog.isActive }),
+      });
       fetchAllData();
     } catch { /* ignore */ }
   };
@@ -556,7 +637,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   // Login screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#17202A] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-app-bg flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
           <button
             onClick={onBack}
@@ -566,8 +647,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
           </button>
 
           <div className="flex flex-col items-center mb-6">
-            <div className="w-16 h-16 rounded-full bg-[#e48d2a]/10 flex items-center justify-center mb-3">
-              <Shield className="w-8 h-8 text-[#e48d2a]" />
+            <div className="w-16 h-16 rounded-full bg-app-accent/10 flex items-center justify-center mb-3">
+              <Shield className="w-8 h-8 text-app-accent" />
             </div>
             <h2 className="text-xl font-bold text-white">Panel Admin</h2>
             <p className="text-sm text-white/40 mt-1">Voces Campesinas</p>
@@ -582,13 +663,13 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#e48d2a]/50"
+                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-app-accent/50"
               />
             </div>
             <Button
               onClick={handleLogin}
               disabled={loading || !password}
-              className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] font-semibold"
+              className="w-full bg-app-accent text-app-bg hover:bg-app-accent-dk font-semibold"
             >
               {loading ? 'Verificando...' : (
                 <span className="flex items-center gap-2">
@@ -606,9 +687,9 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   // Admin Dashboard
   return (
-    <div className="min-h-screen bg-[#17202A] text-white">
+    <div className="min-h-screen bg-app-bg text-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#17202A]/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
+      <header className="sticky top-0 z-50 bg-app-bg/95 backdrop-blur-lg border-b border-white/5 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -618,8 +699,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
             >
               <ArrowLeft className="w-4 h-4 text-white/60" />
             </button>
-            <div className="w-8 h-8 rounded-lg bg-[#e48d2a] flex items-center justify-center">
-              <Radio className="w-4 h-4 text-[#17202A]" />
+            <div className="w-8 h-8 rounded-lg bg-app-accent flex items-center justify-center">
+              <Radio className="w-4 h-4 text-app-bg" />
             </div>
             <div>
               <h1 className="text-sm font-bold">Panel de Administración</h1>
@@ -641,44 +722,44 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
         {/* Stats */}
         <div className="grid grid-cols-4 gap-3 mb-6">
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-2xl font-bold text-[#e48d2a]">{Object.keys(groupedPrograms).length}</p>
+            <p className="text-2xl font-bold text-app-accent">{programs.length}</p>
             <p className="text-[10px] text-white/40">Programas</p>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-2xl font-bold text-[#e48d2a]">{messages.filter(m => m.isActive).length}</p>
+            <p className="text-2xl font-bold text-app-accent">{messages.filter(m => m.isActive).length}</p>
             <p className="text-[10px] text-white/40">Info Activos</p>
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative">
-            <p className="text-2xl font-bold text-[#e48d2a]">{songRequests.length}</p>
+            <p className="text-2xl font-bold text-app-accent">{songRequests.length}</p>
             <p className="text-[10px] text-white/40">Peticiones</p>
             {unreadRequests > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center">{unreadRequests}</span>
             )}
           </div>
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-2xl font-bold text-[#e48d2a]">{logs.length}</p>
+            <p className="text-2xl font-bold text-app-accent">{logs.length}</p>
             <p className="text-[10px] text-white/40">Actividad</p>
           </div>
         </div>
 
         <Tabs defaultValue="programs" className="w-full">
           <TabsList className="w-full bg-white/5 border border-white/10 rounded-xl h-auto p-1">
-            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="programs" className="flex-1 data-[state=active]:bg-app-accent data-[state=active]:text-app-bg text-white/50 text-xs py-2 rounded-lg">
               <Clock className="w-3.5 h-3.5 mr-1" /> Programación
             </TabsTrigger>
-            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="messages" className="flex-1 data-[state=active]:bg-app-accent data-[state=active]:text-app-bg text-white/50 text-xs py-2 rounded-lg">
               <Bell className="w-3.5 h-3.5 mr-1" /> Información
             </TabsTrigger>
-            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg relative">
+            <TabsTrigger value="requests" className="flex-1 data-[state=active]:bg-app-accent data-[state=active]:text-app-bg text-white/50 text-xs py-2 rounded-lg relative">
               <Send className="w-3.5 h-3.5 mr-1" /> Peticiones
               {unreadRequests > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full">{unreadRequests}</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="settings" className="flex-1 data-[state=active]:bg-app-accent data-[state=active]:text-app-bg text-white/50 text-xs py-2 rounded-lg">
               <Settings className="w-3.5 h-3.5 mr-1" /> Config
             </TabsTrigger>
-            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-[#e48d2a] data-[state=active]:text-[#17202A] text-white/50 text-xs py-2 rounded-lg">
+            <TabsTrigger value="videos" className="flex-1 data-[state=active]:bg-app-accent data-[state=active]:text-app-bg text-white/50 text-xs py-2 rounded-lg">
               <Play className="w-3.5 h-3.5 mr-1" /> Videos
             </TabsTrigger>
           </TabsList>
@@ -692,12 +773,12 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   <Button
                     size="sm"
                     onClick={openNewProgram}
-                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+                    className="bg-app-accent text-app-bg hover:bg-app-accent-dk text-xs h-8"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogContent className="bg-app-surface border-white/10 text-white max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-white">
                       {isEditingExisting ? 'Editar Programa' : 'Nuevo Programa'}
@@ -723,69 +804,107 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       className="bg-white/5 border-white/10 text-white min-h-[60px]"
                     />
 
-                    {/* Day Selection with Quick Selects */}
+                    {/* Horarios de emisión (multi-horario + reemisión) */}
                     <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                      <label className="text-xs text-white/60 font-medium mb-2 block">Días de emisión *</label>
+                      <label className="text-xs text-white/60 font-medium mb-2 block">Horarios de emisión *</label>
 
-                      {/* Quick select buttons */}
-                      <div className="flex gap-1.5 mb-3">
-                        <button
-                          type="button"
-                          onClick={toggleAllDays}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
-                            isQuickActive([0, 1, 2, 3, 4, 5, 6])
-                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
-                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
-                          }`}
-                        >
-                          Todos
-                        </button>
-                        <button
-                          type="button"
-                          onClick={setWeekdays}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
-                            isQuickActive([1, 2, 3, 4, 5])
-                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
-                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
-                          }`}
-                        >
-                          Lun - Vie
-                        </button>
-                        <button
-                          type="button"
-                          onClick={setWeekend}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
-                            isQuickActive([0, 6])
-                              ? 'bg-[#e48d2a] border-[#e48d2a] text-[#17202A]'
-                              : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
-                          }`}
-                        >
-                          Fin de Semana
-                        </button>
-                      </div>
+                      {/* Filas de horarios ya agregados */}
+                      {slotRows.length > 0 && (
+                        <div className="space-y-1.5 mb-3">
+                          {slotRows.map((row, idx) => (
+                            <div key={`${idx}-${row.dayOfWeek}-${row.startTime}`} className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 border ${row.isRerun ? 'bg-app-accent/[0.06] border-app-accent/20' : 'bg-white/[0.03] border-white/5'}`}>
+                              <Select value={String(row.dayOfWeek)} onValueChange={v => updateSlotRow(idx, { dayOfWeek: Number(v) })}>
+                                <SelectTrigger className="h-7 bg-white/5 border-white/10 text-white text-[11px] w-[76px] shrink-0">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-app-surface border-app-bdr">
+                                  {DAY_NAMES.map((d, i) => (
+                                    <SelectItem key={i} value={String(i)} className="text-white text-xs">{DAY_FULL_NAMES[i]}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                type="time"
+                                value={row.startTime}
+                                onChange={e => updateSlotRow(idx, { startTime: e.target.value })}
+                                className="h-7 bg-white/5 border-white/10 text-white text-[11px] w-[92px] shrink-0"
+                              />
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Input
+                                  type="number"
+                                  min={5}
+                                  max={1440}
+                                  value={row.durationMin}
+                                  onChange={e => updateSlotRow(idx, { durationMin: parseInt(e.target.value) || 60 })}
+                                  className="h-7 bg-white/5 border-white/10 text-white text-[11px] w-[54px] text-center"
+                                  title="Duración en minutos"
+                                />
+                                <span className="text-[9px] text-white/30">min</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => updateSlotRow(idx, { isRerun: !row.isRerun })}
+                                title={row.isRerun ? 'Es reemisión (clic para quitar)' : 'Marcar como reemisión'}
+                                className={`shrink-0 p-1.5 rounded-md border transition-colors ${row.isRerun ? 'bg-app-accent/20 border-app-accent/40 text-app-accent' : 'bg-white/[0.02] border-white/5 text-white/25 hover:text-white/50'}`}
+                              >
+                                <Repeat className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeSlotRow(idx)}
+                                className="shrink-0 p-1.5 rounded-md text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                title="Quitar horario"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                      {/* Individual day buttons */}
-                      <div className="grid grid-cols-7 gap-1">
-                        {DAY_NAMES.map((day, idx) => (
+                      {/* Agregar en lote: días + hora + duración */}
+                      <div className="rounded-lg border border-white/5 p-2.5">
+                        <p className="text-[10px] text-white/40 mb-1.5 font-medium">Agregar horarios — selecciona días, hora y duración</p>
+                        <div className="flex gap-1.5 mb-2">
+                          <button type="button" onClick={toggleQuickAllDays} className={quickChipCls(isQuickActive([0, 1, 2, 3, 4, 5, 6]))}>Todos</button>
+                          <button type="button" onClick={setQuickWeekdays} className={quickChipCls(isQuickActive([1, 2, 3, 4, 5]))}>Lun - Vie</button>
+                          <button type="button" onClick={setQuickWeekend} className={quickChipCls(isQuickActive([0, 6]))}>Fin de Semana</button>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 mb-2">
+                          {DAY_NAMES.map((day, idx) => (
+                            <button key={idx} type="button" onClick={() => toggleQuickDay(idx)} className={dayChipCls(quickDays.includes(idx))}>
+                              {quickDays.includes(idx) && <Check className="w-3 h-3" />}
+                              <span>{day}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Input type="time" value={quickStart} onChange={e => setQuickStart(e.target.value)} className="h-8 flex-1 min-w-[90px] bg-white/5 border-white/10 text-white text-xs" />
+                          <Input type="number" min={5} max={1440} value={quickDuration} onChange={e => setQuickDuration(parseInt(e.target.value) || 60)} className="h-8 w-[64px] bg-white/5 border-white/10 text-white text-xs text-center" title="Duración en minutos" />
                           <button
-                            key={idx}
                             type="button"
-                            onClick={() => toggleDay(idx)}
-                            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg text-[11px] font-medium transition-all border ${
-                              selectedDays.includes(idx)
-                                ? 'bg-[#e48d2a]/15 border-[#e48d2a]/40 text-[#e48d2a]'
-                                : 'bg-white/[0.02] border-white/5 text-white/30 hover:border-white/15 hover:text-white/60'
-                            }`}
+                            onClick={() => setQuickRerun(v => !v)}
+                            className={`h-8 px-2.5 rounded-md border text-[10px] font-medium flex items-center gap-1 transition-colors ${quickRerun ? 'bg-app-accent/20 border-app-accent/40 text-app-accent' : 'bg-white/[0.02] border-white/5 text-white/30'}`}
                           >
-                            {selectedDays.includes(idx) && <Check className="w-3 h-3" />}
-                            <span>{day}</span>
+                            <Repeat className="w-3 h-3" /> Reemisión
                           </button>
-                        ))}
+                          <button
+                            type="button"
+                            onClick={addScheduleRows}
+                            className="h-8 px-3 rounded-md bg-app-accent/20 text-app-accent hover:bg-app-accent/30 text-[11px] font-medium flex items-center gap-1 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Agregar{quickDays.length > 1 ? ` (${quickDays.length})` : ''}
+                          </button>
+                        </div>
+                        {quickDays.length > 0 && (
+                          <p className="text-[9px] text-white/25 mt-1.5">
+                            Se agregar{quickDays.length === 1 ? 'á 1 horario' : `án ${quickDays.length} horarios`} — {quickDays.map(d => DAY_FULL_NAMES[d]).join(', ')} a las {quickStart} ({quickDuration} min)
+                          </p>
+                        )}
                       </div>
-
-                      {selectedDays.length > 0 && (
+                      {slotRows.length > 0 && (
                         <p className="text-[10px] text-white/25 mt-2 text-center">
-                          Se creará {selectedDays.length === 1 ? '1 entrada' : `${selectedDays.length} entradas`} — {selectedDays.map(d => DAY_FULL_NAMES[d]).join(', ')}
+                          {slotRows.length} horario{slotRows.length !== 1 ? 's' : ''} en total — cada uno puede tener día, hora y duración distintos
                         </p>
                       )}
                     </div>
@@ -810,7 +929,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           </span>
                           <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                         </label>
-                        {uploadingImage && <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>}
+                        {uploadingImage && <span className="text-[10px] text-app-accent animate-pulse">Subiendo...</span>}
                         {editingProgram.imageUrl && (
                           <button onClick={() => setEditingProgram(prev => ({ ...prev, imageUrl: '' }))} className="text-white/30 hover:text-red-400 transition-colors p-1" title="Quitar"><X className="w-3.5 h-3.5" /></button>
                         )}
@@ -832,7 +951,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           </span>
                           <input type="file" accept="image/*" onChange={handlePlayerImageUpload} className="hidden" />
                         </label>
-                        {uploadingPlayerImage && <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>}
+                        {uploadingPlayerImage && <span className="text-[10px] text-app-accent animate-pulse">Subiendo...</span>}
                         {editingProgram.playerImageUrl && (
                           <button onClick={() => setEditingProgram(prev => ({ ...prev, playerImageUrl: '' }))} className="text-white/30 hover:text-red-400 transition-colors p-1" title="Quitar"><X className="w-3.5 h-3.5" /></button>
                         )}
@@ -843,26 +962,6 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                         </div>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] text-white/40 mb-1 block">Hora inicio *</label>
-                        <Input
-                          type="time"
-                          value={editingProgram.startTime || ''}
-                          onChange={e => setEditingProgram(prev => ({ ...prev, startTime: e.target.value }))}
-                          className="bg-white/5 border-white/10 text-white text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-white/40 mb-1 block">Hora fin *</label>
-                        <Input
-                          type="time"
-                          value={editingProgram.endTime || ''}
-                          onChange={e => setEditingProgram(prev => ({ ...prev, endTime: e.target.value }))}
-                          className="bg-white/5 border-white/10 text-white text-xs"
-                        />
-                      </div>
-                    </div>
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={editingProgram.isActive ?? true}
@@ -870,7 +969,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       />
                       <span className="text-xs text-white/60">Programa activo</span>
                     </div>
-                    <Button onClick={saveProgram} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+                    <Button onClick={saveProgram} className="w-full bg-app-accent text-app-bg hover:bg-app-accent-dk">
                       <Save className="w-4 h-4 mr-1" /> Guardar
                     </Button>
                   </div>
@@ -879,58 +978,62 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
             </div>
 
             <div className="space-y-3 max-h-[500px] overflow-y-auto hide-scrollbar">
-              {Object.keys(groupedPrograms).length === 0 ? (
+              {programs.length === 0 ? (
                 <p className="text-center text-white/30 text-sm py-8">No hay programas creados</p>
               ) : (
-                Object.entries(groupedPrograms).map(([name, progs]) => {
-                  const firstProg = progs[0];
-                  const dayCount = progs.length;
-                  const allDays = progs.every(p => p.isActive);
-                  const dayLabels = progs
-                    .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
-                    .map(p => DAY_NAMES[p.dayOfWeek]);
+                [...programs].sort((a, b) => a.name.localeCompare(b.name)).map(prog => {
+                  const summary = slotSummary(prog);
+                  const totalSlots = summary.reduce((n, g) => n + g.days.length, 0);
+                  const hasRerun = summary.some(g => g.rerun);
 
                   return (
-                    <div key={name} className={`p-3 rounded-xl border transition-all ${allDays ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
+                    <div key={prog.id} className={`p-3 rounded-lg border transition-all elev-1 ${prog.isActive ? 'bg-app-surface border-app-bdr' : 'bg-white/[0.02] border-white/5 opacity-50'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-semibold text-white truncate">{name}</h4>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                              dayCount === 7
-                                ? 'bg-[#e48d2a]/20 text-[#e48d2a]'
-                                : 'bg-white/10 text-white/40'
-                            }`}>
-                              {dayCount === 7 ? 'Todos los días' : dayLabels.join(' · ')}
+                            <h4 className="text-sm font-semibold text-white truncate">{prog.name}</h4>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-app-accent/20 text-app-accent font-medium">
+                              {totalSlots} horario{totalSlots !== 1 ? 's' : ''}
                             </span>
+                            {hasRerun && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/50 flex items-center gap-1">
+                                <Repeat className="w-2.5 h-2.5" /> Reemisión
+                              </span>
+                            )}
                           </div>
-                          <p className="text-[11px] text-white/40 mt-0.5">
-                            {firstProg.startTime} - {firstProg.endTime}
-                            {firstProg.host && ` | ${firstProg.host}`}
-                            {firstProg.genre && ` | ${firstProg.genre}`}
-                          </p>
+                          {summary.map((g, i) => (
+                            <p key={i} className="text-[11px] text-white/40 mt-0.5">
+                              {g.rerun && <span className="text-app-accent/70 font-medium">↻ </span>}
+                              <span className="font-mono">{g.start}</span> ({g.dur} min) — {g.days.map(d => DAY_NAMES[d]).join(' · ')}
+                            </p>
+                          ))}
+                          {prog.host && (
+                            <p className="text-[11px] text-white/40 mt-0.5">
+                              {prog.host}{prog.genre && ` | ${prog.genre}`}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <Switch
-                            checked={allDays}
-                            onCheckedChange={() => toggleProgramActive(firstProg)}
+                            checked={prog.isActive}
+                            onCheckedChange={() => toggleProgramActive(prog)}
                             className="scale-75"
                           />
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openEditProgram(firstProg)}
+                            onClick={() => openEditProgram(prog)}
                             className="h-7 w-7 p-0 text-white/40 hover:text-white"
-                            title="Editar"
+                            title="Editar programa y horarios"
                           >
                             <Settings className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteProgram(firstProg.id, name)}
+                            onClick={() => deleteProgram(prog.id)}
                             className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
-                            title="Eliminar"
+                            title="Eliminar con todos sus horarios"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -952,12 +1055,12 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   <Button
                     size="sm"
                     onClick={() => setEditingMessage({ type: 'info', priority: 0, isActive: true })}
-                    className="bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs h-8"
+                    className="bg-app-accent text-app-bg hover:bg-app-accent-dk text-xs h-8"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#1a2332] border-white/10 text-white max-w-md">
+                <DialogContent className="bg-app-surface border-white/10 text-white max-w-md">
                   <DialogHeader>
                     <DialogTitle className="text-white">
                       {editingMessage.id ? 'Editar Información' : 'Nueva Información'}
@@ -980,7 +1083,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-[#1a2332] border-white/10">
+                          <SelectContent className="bg-app-surface border-white/10">
                             <SelectItem value="info" className="text-white text-xs">Información</SelectItem>
                             <SelectItem value="alert" className="text-white text-xs">Alerta</SelectItem>
                             <SelectItem value="promotion" className="text-white text-xs">Promoción</SelectItem>
@@ -1018,7 +1121,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           />
                         </label>
                         {uploadingMsgImage && (
-                          <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+                          <span className="text-[10px] text-app-accent animate-pulse">Subiendo...</span>
                         )}
                         {editingMessage.imageUrl && (
                           <button
@@ -1043,7 +1146,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       />
                       <span className="text-xs text-white/60">Activo</span>
                     </div>
-                    <Button onClick={saveMessage} className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820]">
+                    <Button onClick={saveMessage} className="w-full bg-app-accent text-app-bg hover:bg-app-accent-dk">
                       <Save className="w-4 h-4 mr-1" /> Guardar
                     </Button>
                   </div>
@@ -1074,7 +1177,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                             msg.type === 'info' ? 'bg-sky-500/10 text-sky-400' :
                             msg.type === 'alert' ? 'bg-amber-500/10 text-amber-400' :
-                            'bg-[#e48d2a]/10 text-[#e48d2a]'
+                            'bg-app-accent/10 text-app-accent'
                           }`}>
                             {msg.type === 'info' ? 'Info' : msg.type === 'alert' ? 'Alerta' : 'Promo'}
                           </span>
@@ -1133,7 +1236,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       await markRequestRead(r.id, true);
                     }
                   }}
-                  className="text-xs text-[#e48d2a] hover:bg-[#e48d2a]/10"
+                  className="text-xs text-app-accent hover:bg-app-accent/10"
                 >
                   <Check className="w-3 h-3 mr-1" /> Marcar todo leído
                 </Button>
@@ -1152,7 +1255,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   const typeIcon = req.type === 'greeting' ? Heart : req.type === 'message' ? MessageSquare : Music;
                   const TypeIcon = typeIcon;
                   const typeLabel = req.type === 'greeting' ? 'Saludo' : req.type === 'message' ? 'Mensaje' : 'Petición';
-                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-[#e48d2a] bg-[#e48d2a]/10';
+                  const typeColor = req.type === 'greeting' ? 'text-pink-400 bg-pink-500/10' : req.type === 'message' ? 'text-sky-400 bg-sky-500/10' : 'text-app-accent bg-app-accent/10';
 
                   return (
                     <div key={req.id} className={`p-3 rounded-xl border transition-all ${!req.isRead ? 'bg-white/5 border-[#e48d2a]/20' : 'bg-white/[0.02] border-white/5'}`}>
@@ -1263,7 +1366,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       />
                     </label>
                     {uploadingOffAir && (
-                      <span className="text-[10px] text-[#e48d2a] animate-pulse">Subiendo...</span>
+                      <span className="text-[10px] text-app-accent animate-pulse">Subiendo...</span>
                     )}
                     {offAirImage && (
                       <button
@@ -1488,7 +1591,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       finally { setPushSending(false); }
                     }}
                     disabled={pushSending || pushSubscribers === 0}
-                    className="text-[10px] px-3 py-1.5 rounded-lg bg-[#e48d2a]/20 text-[#e48d2a] hover:bg-[#e48d2a]/30 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="text-[10px] px-3 py-1.5 rounded-lg bg-app-accent/20 text-app-accent hover:bg-app-accent/30 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {pushSending ? 'Enviando...' : `Enviar a ${pushSubscribers} suscriptor${pushSubscribers !== 1 ? 'es' : ''}`}
                   </button>
@@ -1506,7 +1609,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
               {/* Stats cards */}
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
-                  <p className="text-lg font-bold text-[#e48d2a]">{deviceStats.total}</p>
+                  <p className="text-lg font-bold text-app-accent">{deviceStats.total}</p>
                   <p className="text-[9px] text-white/40">Total</p>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
@@ -1593,7 +1696,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       <span className="text-white/20 font-mono shrink-0">
                         {new Date(log.createdAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className="text-[#e48d2a]/60 font-mono shrink-0">{log.action}</span>
+                      <span className="text-app-accent/60 font-mono shrink-0">{log.action}</span>
                       {log.detail && <span className="text-white/30 truncate">{log.detail}</span>}
                     </div>
                   ))}
@@ -1615,7 +1718,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     <Plus className="w-3 h-3" /> Agregar
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#1a1a2e] border-white/10 text-white max-w-md mx-4">
+                <DialogContent className="bg-app-surface border-white/10 text-white max-w-md mx-4">
                   <DialogHeader>
                     <DialogTitle className="text-sm">{editingVideo.id ? 'Editar Video' : 'Agregar Video'}</DialogTitle>
                   </DialogHeader>
@@ -1678,7 +1781,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           }
                         } catch { toast.error('Error de conexión'); }
                       }}
-                      className="w-full bg-[#e48d2a] text-[#17202A] hover:bg-[#c87820] text-xs font-semibold h-9"
+                      className="w-full bg-app-accent text-app-bg hover:bg-app-accent-dk text-xs font-semibold h-9"
                     >
                       <Save className="w-3.5 h-3.5 mr-1" />
                       {editingVideo.id ? 'Actualizar' : 'Guardar'}

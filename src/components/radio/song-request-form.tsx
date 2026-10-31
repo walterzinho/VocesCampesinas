@@ -93,7 +93,7 @@ export default function SongRequestForm() {
 
   if (sent) {
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-5 rounded-2xl bg-app-accent/10 border border-app-accent/20 text-center">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-5 rounded-lg bg-app-accent/10 border border-app-accent/20 text-center">
         <CheckCircle className="w-10 h-10 mx-auto mb-2 text-app-accent" />
         <h4 className="text-sm font-bold text-app-text mb-1">¡Recibido!</h4>
         <p className="text-xs text-app-t3">Tu {typeLabel} fue enviado con éxito</p>
@@ -102,7 +102,7 @@ export default function SongRequestForm() {
   }
 
   return (
-    <div className="rounded-2xl bg-app-surface backdrop-blur-sm border border-app-bdr overflow-hidden">
+    <div className="rounded-lg bg-app-surface backdrop-blur-sm border border-app-bdr overflow-hidden">
       {/* Header */}
       <div className="px-4 py-2.5 border-b border-app-bdr-l">
         <div className="flex items-center gap-2">

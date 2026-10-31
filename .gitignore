@@ -76,3 +76,4 @@ programs_all_route.json
 # ===== Documentos generados en pruebas =====
 *.zip
 *.tgz
+*.tsbuildinfo

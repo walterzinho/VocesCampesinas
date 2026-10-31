@@ -43,7 +43,7 @@ export default function BlogSection() {
     return (
       <div className="space-y-3">
         {[1, 2, 3].map(i => (
-          <div key={i} className="animate-pulse rounded-2xl bg-app-surface overflow-hidden">
+          <div key={i} className="animate-pulse rounded-lg bg-app-surface overflow-hidden">
             <div className="flex"><div className="w-28 h-28 bg-app-surface-h shrink-0" /><div className="flex-1 p-3 space-y-2"><div className="h-4 bg-app-surface-h rounded w-3/4" /><div className="h-3 bg-app-surface rounded w-full" /><div className="h-3 bg-app-surface rounded w-2/3" /></div></div>
           </div>
         ))}
@@ -68,7 +68,7 @@ export default function BlogSection() {
       </div>
 
       {articles.map((article, idx) => (
-        <motion.a key={article.id} href={article.link} target="_blank" rel="noopener noreferrer" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }} className="block rounded-2xl bg-app-surface border border-app-bdr overflow-hidden hover:bg-app-surface-h hover:border-app-bdr transition-all duration-200 active:scale-[0.98]">
+        <motion.a key={article.id} href={article.link} target="_blank" rel="noopener noreferrer" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }} className="block rounded-lg bg-app-surface border border-app-bdr overflow-hidden hover:bg-app-surface-h hover:border-app-bdr transition-all duration-200 active:scale-[0.98]">
           <div className="flex">
             <div className="shrink-0 w-28 h-28 relative bg-app-surface">
               {article.imageUrl ? (

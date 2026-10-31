@@ -92,7 +92,7 @@ export default function MessageBanner() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
-          className={`relative overflow-hidden rounded-2xl border ${config.border} bg-app-surface group active:scale-[0.98] transition-transform duration-150`}
+          className={`relative overflow-hidden rounded-lg border ${config.border} bg-app-surface group active:scale-[0.98] transition-transform duration-150`}
         >
           <div className="flex">
             {/* Left: Image or Icon placeholder */}
@@ -109,7 +109,7 @@ export default function MessageBanner() {
               </div>
             ) : (
               <div className={`shrink-0 w-28 h-28 relative bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
-                <div className={`w-14 h-14 rounded-2xl ${config.iconBg} flex items-center justify-center border border-white/5`}>
+                <div className={`w-14 h-14 rounded-lg ${config.iconBg} flex items-center justify-center border border-white/5`}>
                   <Icon className={`w-7 h-7 ${config.color} opacity-80`} />
                 </div>
                 <div className={`absolute top-0 left-0 w-1 h-full ${config.accent} rounded-r`} />
