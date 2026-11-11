@@ -18,9 +18,14 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Autoplay bloqueado por el navegador: reanudar con la primera interacción
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const hasInteractedRef = useRef(false);
+  const userPausedRef = useRef(false); // pausa manual del usuario: no reanudar sola
+  const disarmAutoplayRef = useRef<() => void>(() => {});
+  const armAutoplayResumeRef = useRef<() => void>(() => {});
 
   const updateMediaSession = useCallback(() => {
     if (!('mediaSession' in navigator)) return;
@@ -35,13 +40,16 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
     });
     navigator.mediaSession.setActionHandler('play', async () => {
       hasInteractedRef.current = true;
+      userPausedRef.current = false;
       try { await audioRef.current?.play(); setIsPlaying(true); } catch { /* */ }
     });
     navigator.mediaSession.setActionHandler('pause', () => {
+      userPausedRef.current = true;
       audioRef.current?.pause();
       setIsPlaying(false);
     });
     navigator.mediaSession.setActionHandler('stop', () => {
+      userPausedRef.current = true;
       audioRef.current?.pause();
       audioRef.current!.src = '';
       setIsPlaying(false);
@@ -59,20 +67,44 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
     try {
       await audioRef.current.play();
       setIsPlaying(true);
+      setAutoplayBlocked(false);
+      disarmAutoplayRef.current();
       reconnectAttemptsRef.current = 0;
     } catch (err) {
       setIsPlaying(false);
+      // Política de autoplay: NotAllowedError. Armar reanudación con el
+      // primer clic/tecla/toque en cualquier parte de la app.
+      if ((err as DOMException)?.name === 'NotAllowedError') {
+        setAutoplayBlocked(true);
+        armAutoplayResumeRef.current?.();
+      }
     } finally {
       setIsLoading(false);
     }
   }, [streamUrl]);
+
+  // Primer gesto del usuario inicia la radio (si no hubo pausa manual)
+  const armAutoplayResume = useCallback(() => {
+    disarmAutoplayRef.current();
+    const onFirstInteract = () => {
+      disarmAutoplayRef.current();
+      if (userPausedRef.current) return;
+      tryPlay();
+    };
+    const events = ['pointerdown', 'keydown', 'touchstart'] as const;
+    events.forEach((ev) => window.addEventListener(ev, onFirstInteract, { passive: true }));
+    disarmAutoplayRef.current = () => {
+      events.forEach((ev) => window.removeEventListener(ev, onFirstInteract));
+    };
+  }, [tryPlay]);
+  armAutoplayResumeRef.current = armAutoplayResume;
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.volume = volume;
     tryPlay();
-    const handlePlaying = () => { setIsPlaying(true); setIsLoading(false); setError(null); reconnectAttemptsRef.current = 0; };
+    const handlePlaying = () => { setIsPlaying(true); setIsLoading(false); setError(null); setAutoplayBlocked(false); disarmAutoplayRef.current(); reconnectAttemptsRef.current = 0; };
     const handleWaiting = () => setIsLoading(true);
     const handleCanPlay = () => setIsLoading(false);
     const handleError = () => {
@@ -92,6 +124,7 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError);
+      disarmAutoplayRef.current();
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
     };
   }, [streamUrl, tryPlay]);
@@ -125,8 +158,11 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
     const audio = audioRef.current;
     if (!audio) return;
     if (isPlaying) {
+      userPausedRef.current = true;
       audio.pause(); setIsPlaying(false);
     } else {
+      userPausedRef.current = false;
+      setAutoplayBlocked(false);
       setIsLoading(true);
       try {
         if (!audio.src || audio.src === window.location.href) { audio.src = streamUrl; audio.load(); }
@@ -174,8 +210,8 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
             {isPlaying && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />}
             <span className={`relative inline-flex rounded-full h-2 w-2 ${isPlaying ? 'bg-red-500' : 'bg-gray-500'}`} />
           </span>
-          <span className={`text-[10px] font-bold tracking-wider ${isPlaying ? 'text-red-400' : 'text-white/40'}`}>
-            {isPlaying ? 'EN VIVO' : 'APAGADO'}
+          <span className={`text-[10px] font-bold tracking-wider whitespace-nowrap ${isPlaying ? 'text-red-400' : autoplayBlocked ? 'text-app-accent' : 'text-white/40'}`}>
+            {isPlaying ? 'EN VIVO' : autoplayBlocked ? 'TOCA PARA ESCUCHAR' : 'APAGADO'}
           </span>
         </div>
 
@@ -232,8 +268,8 @@ export default function RadioPlayer({ streamUrl, stationName, currentProgram, va
             <span className="relative inline-flex rounded-full h-3 w-3 bg-gray-600" />
           )}
         </span>
-        <span className={`text-sm font-medium ${isPlaying ? 'text-red-400' : 'text-gray-500'}`}>
-          {isPlaying ? 'EN VIVO' : 'APAGADO'}
+        <span className={`text-sm font-medium ${isPlaying ? 'text-red-400' : autoplayBlocked ? 'text-app-accent' : 'text-gray-500'}`}>
+          {isPlaying ? 'EN VIVO' : autoplayBlocked ? 'Toca en cualquier parte para escuchar' : 'APAGADO'}
         </span>
       </div>
       {error && (
